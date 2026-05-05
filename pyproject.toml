@@ -12,6 +12,15 @@ dependencies = [
     "pydantic[email]>=2.13.3",
     "sqlalchemy>=2.0.49",
     "uvicorn>=0.46.0",
+    # Voice Assistant Pipeline
+    "openai-whisper",
+    "edge-tts>=6.1.12",
+    "sounddevice>=0.4.6",
+    "scipy>=1.13.0",
+    "numpy>=1.26.0",
+    "httpx>=0.27.0",
+    "pygame>=2.5.0",
+    "python-multipart>=0.0.9",
 ]
 
 
