@@ -70,3 +70,7 @@ class ResponseService(BaseResponseService):
         if resp.user_id != user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Cannot delete another user's response.")
         await self.repo.delete(resp)
+
+    #get all responses in general
+    async def list_all(self, limit: int = 20, offset: int = 0) -> tuple[list[Response], int]:
+        return await self.repo.get_all(limit, offset)

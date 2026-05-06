@@ -25,6 +25,15 @@ async def submit_response(
     """Submit a response to a dataset entry."""
     return await svc.submit(current_user.id, data)
 
+@router.get("/", response_model=PaginatedResponse[ResponseSchema])
+async def list_all_responses(
+    limit: int = 20,
+    offset: int = 0,
+    svc: ResponseService = Depends(get_service),
+):
+    items, total = await svc.list_all(limit, offset)
+    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+
 
 @router.get("/dataset/{dataset_id}", response_model=PaginatedResponse[ResponseSchema])
 async def list_responses_for_dataset(

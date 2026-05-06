@@ -84,3 +84,17 @@ class ResponseRepository(BaseResponseRepository):
             await self.db.rollback()
             raise HTTPException(status_code=500, detail="Database error: failed to delete response") from e
 
+    async def get_all(self, limit: int, offset: int) -> tuple[list[Response], int]:
+        try:
+            total = (
+                await self.db.execute(
+                    select(func.count(Response.id))
+                )
+            ).scalar()
+            result = await self.db.execute(
+                select(Response).limit(limit).offset(offset)
+            )
+            return list(result.scalars().all()), total
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Database error: failed to list responses") from e
+
