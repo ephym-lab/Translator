@@ -2,24 +2,27 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Voice Assistant"
-    DATABASE_URL: str = "sqlite:///./app.db"
-    SECRET_KEY: str = "changeme-in-production"
+    PROJECT_NAME: str = "Language Dataset Platform"
+    DATABASE_URL: str = ""
+    SECRET_KEY: str = ""
 
-    # --- STT ---
-    WHISPER_MODEL: str = "base"  # tiny | base | small | medium | large
+    # --- JWT ---
+    JWT_SECRET_KEY: str = ""
+    JWT_ALGORITHM: str = ""
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # --- TTS ---
+    # --- OTP ---
+    OTP_EXPIRE_MINUTES: int = 10
+
+    # --- Voice Assistant (STT / TTS / Mic) ---
+    WHISPER_MODEL: str = "base"
     TTS_VOICE: str = "en-US-JennyNeural"
-
-    # --- Microphone ---
     MIC_SAMPLE_RATE: int = 16000
-    MIC_DURATION: int = 5  # seconds to record per utterance
-
-    # --- Weather API (open-meteo.com — free, no key required) ---
+    MIC_DURATION: int = 5
     WEATHER_API_BASE: str = "https://api.open-meteo.com/v1/forecast"
     GEOCODING_API_BASE: str = "https://geocoding-api.open-meteo.com/v1/search"
-    DEFAULT_LOCATION: str = "your area"
+    DEFAULT_LOCATION: str = "Nairobi"
 
     class Config:
         env_file = ".env"

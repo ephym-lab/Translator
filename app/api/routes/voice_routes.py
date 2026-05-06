@@ -18,11 +18,11 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/voice", tags=["Voice Assistant"])
 
-# ─── Supported audio formats ────────────────────────────────────────────────
+# Supported audio formats 
 SUPPORTED_FORMATS = {".wav", ".mp3", ".m4a", ".ogg", ".flac"}
 
 
-# ─── Dependency factories ────────────────────────────────────────────────────
+#Dependency factories
 
 
 def get_stt() -> WhisperSTTService:
@@ -43,8 +43,7 @@ def get_pipeline() -> VoiceAssistantPipeline:
     )
 
 
-# ─── Endpoints ───────────────────────────────────────────────────────────────
-
+# Endpoints 
 
 @router.post(
     "/transcribe",
