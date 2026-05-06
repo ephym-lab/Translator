@@ -1,0 +1,47 @@
+services:
+
+  db:
+    image: postgres:17
+    container_name: language-backend-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - languagee_db:/var/lib/postgresql/data
+    networks:
+      - language-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: language-backend-local
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to point at the 'db' service (not localhost)
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy   # wait until postgres is actually ready
+    networks:
+      - language-network
+    restart: unless-stopped
+
+volumes:
+  languagee_db:
+
+networks:
+  language-network:
+    driver: bridge
