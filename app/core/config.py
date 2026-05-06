@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     # --- OTP ---
     OTP_EXPIRE_MINUTES: int = 10
 
+    # --- Gmail SMTP ---
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_APP_PASSWORD: str = ""
+    EMAIL_FROM_NAME: str = "Language Dataset Platform"
+
     # --- Voice Assistant (STT / TTS / Mic) ---
     WHISPER_MODEL: str = "base"
     TTS_VOICE: str = "en-US-JennyNeural"

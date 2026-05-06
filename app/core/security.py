@@ -1,25 +1,25 @@
 import random
 from datetime import datetime, timedelta, timezone
 
+import bcrypt as _bcrypt
 from jose import jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 #Password
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash a password with bcrypt (truncated to 72 bytes — bcrypt's hard limit)."""
+    return _bcrypt.hashpw(password.encode()[:72], _bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    """Verify a plain-text password against a bcrypt hash."""
+    return _bcrypt.checkpw(plain.encode()[:72], hashed.encode())
 
 
-# ─── JWT ─────────────────────────────────────────────────────────────────────
+# JWT
 
 def create_access_token(data: dict) -> str:
     """Create a short-lived JWT access token."""
@@ -46,7 +46,7 @@ def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
 
 
-# ─── OTP ─────────────────────────────────────────────────────────────────────
+# OTP
 
 def generate_otp() -> str:
     """Generate a 6-digit numeric OTP code."""

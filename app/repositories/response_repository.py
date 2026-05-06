@@ -1,10 +1,9 @@
 import uuid
 from abc import ABC, abstractmethod
-
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.response import Response
+from fastapi import HTTPException
 
 
 class BaseResponseRepository(ABC):

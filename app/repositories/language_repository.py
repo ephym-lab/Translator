@@ -1,10 +1,12 @@
+import logging
 import uuid
 from abc import ABC, abstractmethod
-
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi import HTTPException
 from app.models.language import Language
+
+logger = logging.getLogger(__name__)
 
 
 class BaseLanguageRepository(ABC):
@@ -46,9 +48,11 @@ class LanguageRepository(BaseLanguageRepository):
     async def get_by_code(self, code: str) -> Language | None:
         try:
             result = await self.db.execute(select(Language).where(Language.code == code))
-            return result.scalar_one_or_none()
+            lang = result.scalar_one_or_none()
+            logger.info("Fetched language by code '%s': %s", code, lang)
+            return lang
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Database error: failed to fetch language") from e
+            raise HTTPException(status_code=500, detail=f"Database error: failed to fetch language — {e}") from e
 
     async def get_all(self, limit: int, offset: int) -> tuple[list[Language], int]:
         try:

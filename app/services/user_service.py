@@ -9,13 +9,14 @@ from app.core.config import settings
 from app.core.security import (
     hash_password, verify_password,
     create_access_token, create_refresh_token, decode_token,
-    generate_otp, send_otp_email,
+    generate_otp,
 )
 from app.models.otp import OTP
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserUpdate, LoginRequest, TokenResponse
+from app.services.email_service import email_service
 
 
 class BaseUserService(ABC):
@@ -84,8 +85,20 @@ class UserService(BaseUserService):
         await self.repo.create_otp(otp)
         await self.repo.create(user)
 
-        send_otp_email(data.email, otp_code)  # stub — wire real email here
-        return {"message": "Registration successful. Verify your email.", "otp": otp_code}
+        await email_service.send_otp_email(data.email, otp_code)
+        return {
+                    "message": "Registration successful. Check your email for the OTP.",
+                    "data":{
+                        "user_id":str(user.id),
+                        "email":user.email,
+                        "username":user.username,
+                        "name":user.name,
+                        "gender":user.gender,
+                        "phone":user.phone,
+                        "avatar":user.avatar,
+                        
+                    }
+               }
 
     async def verify_otp(self, email: str, code: str) -> dict:
         otp = await self.repo.get_unused_otp(email, code)
@@ -103,14 +116,17 @@ class UserService(BaseUserService):
         user.is_verified = True
 
         await self.repo.save_otp(otp)
+        await email_service.send_welcome_email(email)
         return {"message": "Email verified successfully."}
 
     async def login(self, data: LoginRequest) -> TokenResponse:
         user = await self.repo.get_by_email(data.email)
 
-        # Business rule: verify credentials, verification status, active status
-        if not user or not verify_password(data.password, user.hashed_password):
+        if not user:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password.")
+        if not verify_password(data.password, user.hashed_password):
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password.")
+
         if not user.is_verified:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Please verify your email first.")
         if not user.is_active:
