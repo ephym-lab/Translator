@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
     DB_HOST: str = ""
 
+    #ai
+    GROK_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
 

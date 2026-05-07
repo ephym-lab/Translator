@@ -21,6 +21,7 @@ class Response(TimestampMixin, Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     dataset_id = Column(UUID(as_uuid=True), ForeignKey("unclean_datasets.id"), nullable=False)
     language_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=False)
+    category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=False)
 
     __table_args__ = (
         # A user can respond to the same dataset in multiple languages,
@@ -32,4 +33,5 @@ class Response(TimestampMixin, Base):
     user = relationship("User", back_populates="responses")
     dataset = relationship("UncleanDataset", back_populates="responses")
     language = relationship("Language")
+    category = relationship("Category")
     votes = relationship("ResponseVote", back_populates="response", cascade="all, delete-orphan")

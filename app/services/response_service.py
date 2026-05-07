@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.response import Response
 from app.models.unclean_dataset import UncleanDataset
 from app.repositories.response_repository import ResponseRepository
+from app.repositories.dataset_repository import DatasetRepository
 from app.repositories.user_dataset_session_repository import UserDatasetSessionRepository
 from app.repositories.user_language_repository import UserLanguageRepository
 from app.schemas.response import ResponseCreate, ResponseUpdate
@@ -41,7 +42,7 @@ class BaseResponseService(ABC):
     async def delete(self, response_id: uuid.UUID, user_id: uuid.UUID) -> None: ...
 
     @abstractmethod
-    async def next_dataset(self, user_id: uuid.UUID, language_id: uuid.UUID) -> UncleanDataset: ...
+    async def next_dataset(self, user_id: uuid.UUID, language_id: uuid.UUID, category_id: Optional[uuid.UUID] = None) -> UncleanDataset: ...
 
 
 class ResponseService(BaseResponseService):
@@ -50,6 +51,7 @@ class ResponseService(BaseResponseService):
         self.repo = ResponseRepository(db)
         self.session_repo = UserDatasetSessionRepository(db)
         self.ul_repo = UserLanguageRepository(db)
+        self.dataset_repo = DatasetRepository(db)
 
     # ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -65,11 +67,11 @@ class ResponseService(BaseResponseService):
 
     # ─── Endpoints ───────────────────────────────────────────────────────────
 
-    async def next_dataset(self, user_id: uuid.UUID, language_id: uuid.UUID) -> UncleanDataset:
+    async def next_dataset(self, user_id: uuid.UUID, language_id: uuid.UUID, category_id: Optional[uuid.UUID] = None) -> UncleanDataset:
         """Return the next unseen dataset for this user + language, recording the session."""
         await self._validate_user_language(user_id, language_id)
 
-        dataset = await self.session_repo.next_unseen(user_id, language_id)
+        dataset = await self.session_repo.next_unseen(user_id, language_id, category_id=category_id)
         if not dataset:
             raise HTTPException(
                 status.HTTP_404_NOT_FOUND,
@@ -91,11 +93,24 @@ class ResponseService(BaseResponseService):
                 "You have already submitted a response for this dataset in this language.",
             )
 
+        # 3. Validate category_id is allowed for the given dataset
+        dataset = await self.dataset_repo.get_by_id(data.dataset_id)
+        if not dataset:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Dataset not found.")
+        
+        allowed_category_ids = {cat.id for cat in dataset.allowed_categories}
+        if data.category_id not in allowed_category_ids:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "This category is not allowed for this dataset",
+            )
+
         response = Response(
             id=uuid.uuid4(),
             response_text=data.response_text,
             dataset_id=data.dataset_id,
             language_id=data.language_id,
+            category_id=data.category_id,
             user_id=user_id,
         )
         return await self.repo.create(response)

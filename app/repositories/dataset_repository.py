@@ -2,7 +2,9 @@ import uuid
 from abc import ABC, abstractmethod
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.models.category import Category
+from app.models.dataset_category import DatasetCategory
 from app.models.unclean_dataset import UncleanDataset
 from app.models.response import Response
 from fastapi import HTTPException
@@ -19,7 +21,7 @@ class BaseDatasetRepository(ABC):
     async def get_all(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]: ...
 
     @abstractmethod
-    async def create(self, data: dict) -> UncleanDataset: ...
+    async def create(self, data: dict, category_ids: list[uuid.UUID]) -> UncleanDataset: ...
 
     @abstractmethod
     async def save(self, dataset: UncleanDataset) -> UncleanDataset: ...
@@ -43,7 +45,9 @@ class DatasetRepository(BaseDatasetRepository):
     async def get_by_id(self, dataset_id: uuid.UUID) -> UncleanDataset | None:
         try:
             result = await self.db.execute(
-                select(UncleanDataset).where(UncleanDataset.id == dataset_id)
+                select(UncleanDataset)
+                .options(selectinload(UncleanDataset.allowed_categories))
+                .where(UncleanDataset.id == dataset_id)
             )
             return result.scalar_one_or_none()
         except Exception as e:
@@ -52,18 +56,25 @@ class DatasetRepository(BaseDatasetRepository):
     async def get_all(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]:
         try:
             total = (await self.db.execute(select(func.count(UncleanDataset.id)))).scalar()
-            result = await self.db.execute(select(UncleanDataset).limit(limit).offset(offset))
+            result = await self.db.execute(
+                select(UncleanDataset)
+                .options(selectinload(UncleanDataset.allowed_categories))
+                .limit(limit)
+                .offset(offset)
+            )
             return list(result.scalars().all()), total
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to list datasets") from e
 
-    async def create(self, data: dict) -> UncleanDataset:
+    async def create(self, data: dict, category_ids: list[uuid.UUID]) -> UncleanDataset:
         try:
             dataset = UncleanDataset(id=uuid.uuid4(), **data)
             self.db.add(dataset)
+            if category_ids:
+                for cat_id in category_ids:
+                    self.db.add(DatasetCategory(dataset_id=dataset.id, category_id=cat_id))
             await self.db.commit()
-            await self.db.refresh(dataset)
-            return dataset
+            return await self.get_by_id(dataset.id)
         except Exception as e:
             await self.db.rollback()
             raise HTTPException(status_code=500, detail="Database error: failed to create dataset") from e
@@ -71,8 +82,7 @@ class DatasetRepository(BaseDatasetRepository):
     async def save(self, dataset: UncleanDataset) -> UncleanDataset:
         try:
             await self.db.commit()
-            await self.db.refresh(dataset)
-            return dataset
+            return await self.get_by_id(dataset.id)
         except Exception as e:
             await self.db.rollback()
             raise HTTPException(status_code=500, detail="Database error: failed to update dataset") from e

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.unclean_dataset import UncleanDataset
 from app.repositories.dataset_repository import DatasetRepository
+from app.repositories.category_repository import CategoryRepository
 from app.schemas.dataset import DatasetCreate, DatasetUpdate
 
 
@@ -36,9 +37,20 @@ class DatasetService(BaseDatasetService):
     def __init__(self, db: AsyncSession):
         super().__init__(db)
         self.repo = DatasetRepository(db)
+        self.category_repo = CategoryRepository(db)
 
     async def create(self, data: DatasetCreate) -> UncleanDataset:
-        return await self.repo.create(data.model_dump())
+        if not data.category_ids:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "At least one category is required.")
+        
+        # Validate categories
+        categories = await self.category_repo.get_by_ids(data.category_ids)
+        if len(categories) != len(data.category_ids):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "One or more categories do not exist.")
+            
+        dataset_data = data.model_dump()
+        category_ids = dataset_data.pop("category_ids")
+        return await self.repo.create(dataset_data, category_ids)
 
     async def get(self, dataset_id: uuid.UUID) -> UncleanDataset:
         ds = await self.repo.get_by_id(dataset_id)
@@ -51,8 +63,19 @@ class DatasetService(BaseDatasetService):
 
     async def update(self, dataset_id: uuid.UUID, data: DatasetUpdate) -> UncleanDataset:
         ds = await self.get(dataset_id)
-        for field, value in data.model_dump(exclude_unset=True).items():
+        update_data = data.model_dump(exclude_unset=True)
+        
+        category_ids = update_data.pop("category_ids", None)
+        if category_ids is not None:
+            # Validate categories
+            categories = await self.category_repo.get_by_ids(category_ids)
+            if len(categories) != len(category_ids):
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, "One or more categories do not exist.")
+            ds.allowed_categories = categories
+
+        for field, value in update_data.items():
             setattr(ds, field, value)
+            
         return await self.repo.save(ds)
 
     async def delete(self, dataset_id: uuid.UUID) -> None:

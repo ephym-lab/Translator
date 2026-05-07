@@ -17,6 +17,9 @@ class BaseCategoryRepository(ABC):
     async def get_by_name(self, name: str) -> Category | None: ...
 
     @abstractmethod
+    async def get_by_ids(self, ids: list[uuid.UUID]) -> list[Category]: ...
+
+    @abstractmethod
     async def get_all(self, limit: int, offset: int) -> tuple[list[Category], int]: ...
 
     @abstractmethod
@@ -48,6 +51,13 @@ class CategoryRepository(BaseCategoryRepository):
             return result.scalar_one_or_none()
         except Exception as e:
             raise HTTPException(status_code=500, detail="Failed to fetch category") from e
+
+    async def get_by_ids(self, ids: list[uuid.UUID]) -> list[Category]:
+        try:
+            result = await self.db.execute(select(Category).where(Category.id.in_(ids)))
+            return list(result.scalars().all())
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Failed to fetch categories") from e
 
     async def get_all(self, limit: int, offset: int) -> tuple[list[Category], int]:
         try:

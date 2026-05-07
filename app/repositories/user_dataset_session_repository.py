@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from fastapi import HTTPException
 from sqlalchemy import select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.user_dataset_session import UserDatasetSession
 from app.models.response import Response
@@ -21,7 +22,9 @@ class BaseUserDatasetSessionRepository(ABC):
     async def record_session(self, user_id: uuid.UUID, dataset_id: uuid.UUID, language_id: uuid.UUID) -> None: ...
 
     @abstractmethod
-    async def next_unseen(self, user_id: uuid.UUID, language_id: uuid.UUID) -> UncleanDataset | None: ...
+    async def next_unseen(
+        self, user_id: uuid.UUID, language_id: uuid.UUID, category_id: uuid.UUID | None = None
+    ) -> UncleanDataset | None: ...
 
 
 class UserDatasetSessionRepository(BaseUserDatasetSessionRepository):
@@ -57,7 +60,9 @@ class UserDatasetSessionRepository(BaseUserDatasetSessionRepository):
             await self.db.rollback()
             raise HTTPException(status_code=500, detail="Database error: failed to record session") from e
 
-    async def next_unseen(self, user_id: uuid.UUID, language_id: uuid.UUID) -> UncleanDataset | None:
+    async def next_unseen(
+        self, user_id: uuid.UUID, language_id: uuid.UUID, category_id: uuid.UUID | None = None
+    ) -> UncleanDataset | None:
         """Return the next dataset not yet seen by this user in this language, oldest first."""
         try:
             # Subquery: dataset_ids already served to this user in this language
@@ -69,11 +74,17 @@ class UserDatasetSessionRepository(BaseUserDatasetSessionRepository):
                 )
                 .scalar_subquery()
             )
-            result = await self.db.execute(
+            
+            query = (
                 select(UncleanDataset)
+                .options(selectinload(UncleanDataset.allowed_categories))
                 .where(UncleanDataset.id.not_in(seen_subq))
-                .order_by(UncleanDataset.created_at.asc())
-                .limit(1)
+            )
+            if category_id:
+                query = query.where(UncleanDataset.allowed_categories.any(id=category_id))
+                
+            result = await self.db.execute(
+                query.order_by(UncleanDataset.created_at.asc()).limit(1)
             )
             return result.scalar_one_or_none()
         except Exception as e:

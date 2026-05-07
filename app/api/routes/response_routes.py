@@ -32,13 +32,14 @@ async def submit_response(
 @router.get("/next", response_model=DatasetResponse)
 async def get_next_dataset(
     language_id: uuid.UUID,
+    category_id: Optional[uuid.UUID] = None,
     current_user: User = Depends(get_current_user),
     svc: ResponseService = Depends(get_service),
 ):
     """Get the next unseen dataset for the current user in the given language.
     language_id must be one of the user's registered languages.
     Records a session so the same dataset is not served twice."""
-    return await svc.next_dataset(current_user.id, language_id)
+    return await svc.next_dataset(current_user.id, language_id, category_id=category_id)
 
 
 @router.get("/", response_model=PaginatedResponse[ResponseSchema])

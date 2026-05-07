@@ -25,10 +25,9 @@ class UncleanDataset(TimestampMixin, Base):
     response_percentage = Column(Float, default=0.0, nullable=False)
     is_clean = Column(Boolean, default=False, nullable=False)
 
-    category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=False)
     language_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=False)
 
     # Relationships
-    category = relationship("Category")
+    allowed_categories = relationship("Category", secondary="dataset_categories", backref="datasets")
     language = relationship("Language", back_populates="unclean_datasets")
     responses = relationship("Response", back_populates="dataset")
