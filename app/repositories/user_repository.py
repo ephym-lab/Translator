@@ -1,9 +1,8 @@
 import uuid
 from abc import ABC, abstractmethod
-
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi import HTTPException
 from app.models.user import User
 from app.models.otp import OTP
 from app.models.refresh_token import RefreshToken
@@ -71,7 +70,7 @@ class UserRepository(BaseUserRepository):
             result = await self.db.execute(select(User).where(User.email == email))
             return result.scalar_one_or_none()
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Database error: failed to fetch user") from e
+            raise HTTPException(status_code=500, detail="Database error: failed to fetch user" + str(e)) from e
 
     async def get_by_email_or_username(self, email: str, username: str) -> User | None:
         try:
@@ -115,7 +114,7 @@ class UserRepository(BaseUserRepository):
             await self.db.commit()
         except Exception as e:
             await self.db.rollback()
-            raise HTTPException(status_code=500, detail="Database error: failed to delete user") from e
+            raise HTTPException(status_code=500, detail="Database error: failed to delete user"+str(e)) from e
 
     # OTP
 

@@ -92,7 +92,7 @@ async def remove_my_language(
     await svc.remove_language(current_user.id, language_id)
 
 
-# ─── Admin endpoints ──────────────────────────────────────────────────────────
+#Admin endpoints 
 
 @router.get("/", response_model=PaginatedResponse[UserResponse])
 async def list_users(
@@ -123,3 +123,11 @@ async def delete_user(
 ):
     """Delete a user. Admin only."""
     await svc.delete_user(user_id)
+
+#delete user by email
+@router.delete("/delete/{email}")
+async def delete_user_by_email(
+    email: str,
+    svc: UserService = Depends(get_service)
+):
+    return await svc.delete_user_by_email(email)

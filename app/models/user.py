@@ -38,6 +38,7 @@ class User(TimestampMixin, Base):
     # Relationships
     user_languages = relationship("UserLanguage", back_populates="user", cascade="all, delete-orphan")
     languages = relationship("Language", secondary="user_languages", viewonly=True)
-    responses = relationship("Response", back_populates="user")
-    votes = relationship("ResponseVote", back_populates="user")
+    responses = relationship("Response", back_populates="user", cascade="all, delete-orphan")
+    votes = relationship("ResponseVote", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+

@@ -238,3 +238,14 @@ class UserService(BaseUserService):
 
     async def get_user_languages(self, user_id: uuid.UUID) -> list[Language]:
         return await self.ul_repo.get_user_languages(user_id)
+
+    async def delete_user_by_email(self, email: str) -> None:
+        user = await self.repo.get_by_email(email)
+        if not user:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found.")
+        await self.repo.delete(user)
+        await self.db.commit()
+        return {
+            "message": "User deleted successfully.",
+            "data": email,
+        }
