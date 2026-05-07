@@ -79,3 +79,4 @@ class NLLBTTTService(BaseTTTService):
         return await loop.run_in_executor(
             None, partial(self.translate, text, source_lang, target_lang)
         )
+        
