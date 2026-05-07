@@ -14,9 +14,11 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     gender: GenderEnum
+    role: RoleEnum = RoleEnum.user
     phone: Optional[str] = None
     avatar: Optional[str] = None
     languages: List[uuid.UUID]  # at least one language required
+
 
 
 class UserUpdate(BaseModel):

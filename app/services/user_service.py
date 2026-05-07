@@ -90,6 +90,7 @@ class UserService(BaseUserService):
             email=data.email,
             hashed_password=hash_password(data.password),
             gender=data.gender,
+            role=data.role,
             phone=data.phone,
             avatar=data.avatar,
         )
