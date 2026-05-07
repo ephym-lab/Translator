@@ -9,6 +9,7 @@ from app.api.routes import (
     dataset_routes,
     response_routes,
     vote_routes,
+    ai_routes,
 )
 
 api_router = APIRouter()
@@ -29,3 +30,6 @@ api_router.include_router(vote_routes.router)
 
 # Voice Assistant
 api_router.include_router(voice_routes.router)
+
+# AI Generator
+api_router.include_router(ai_routes.router)

@@ -26,6 +26,7 @@ dependencies = [
     "pygame>=2.5.0",
     "python-multipart>=0.0.9",
     "openai>=2.34.0",
+    "google>=3.0.0",
 ]
 
 
