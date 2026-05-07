@@ -52,6 +52,7 @@ class GeneratorRepository(BaseGeneratorRepository):
                 language_id=language_id
             )
             self.db.add(dataset)
+            await self.db.flush()
             
             # 3. Associate all categories
             for cat_id in all_category_ids:

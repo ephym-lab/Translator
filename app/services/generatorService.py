@@ -77,6 +77,8 @@ class GrokService(AIService):
             res = conn.getresponse()
             data = res.read()
             response_json = json.loads(data.decode("utf-8"))
+            if res.status != 200:
+                raise Exception(f"API Error ({res.status}): {data.decode('utf-8')}")
             return response_json['choices'][0]['message']['content']
         except Exception as e:
             return json.dumps({"content": f"Error calling Grok API: {str(e)}", "query": ""})
@@ -90,7 +92,7 @@ from app.core.config import settings
 class AIServiceFactory:
     @staticmethod
     def get_service():
-        provider = os.getenv("AI_PROVIDER", "openai").lower()
+        provider = os.getenv("AI_PROVIDER", "grok").lower()
         
         if provider == "openai":
             api_key = os.getenv("OPENAI_API_KEY") or getattr(settings, "OPENAI_API_KEY", None)

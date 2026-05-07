@@ -39,9 +39,11 @@ class Settings(BaseSettings):
 
     #ai
     GROK_API_KEY: str = ""
+    AI_PROVIDER: str = ""
 
     class Config:
         env_file = ".env"
+        
 
 
 settings = Settings()

@@ -70,6 +70,7 @@ class DatasetRepository(BaseDatasetRepository):
         try:
             dataset = UncleanDataset(id=uuid.uuid4(), **data)
             self.db.add(dataset)
+            await self.db.flush()
             if category_ids:
                 for cat_id in category_ids:
                     self.db.add(DatasetCategory(dataset_id=dataset.id, category_id=cat_id))
