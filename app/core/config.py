@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     WEATHER_API_BASE: str = "https://api.open-meteo.com/v1/forecast"
     GEOCODING_API_BASE: str = "https://geocoding-api.open-meteo.com/v1/search"
     DEFAULT_LOCATION: str = "Nairobi"
+    # Postgres DB
+    POSTGRES_USER: str = ""
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = ""
+    POSTGRES_PORT: int = 5432
+    DB_HOST: str = ""
 
     class Config:
         env_file = ".env"
