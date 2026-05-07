@@ -1,6 +1,8 @@
 import uuid
 from abc import ABC, abstractmethod
+from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,10 +14,12 @@ class BaseSubTribeRepository(ABC):
         self.db = db
 
     @abstractmethod
-    async def get_by_id(self, subtribe_id: uuid.UUID) -> SubTribe | None: ...
+    async def get_by_id(self, subtribe_id: uuid.UUID) -> Optional[SubTribe]: ...
 
     @abstractmethod
-    async def get_all(self, limit: int, offset: int) -> tuple[list[SubTribe], int]: ...
+    async def get_all(
+        self, limit: int, offset: int, tribe_id: Optional[uuid.UUID] = None
+    ) -> tuple[list[SubTribe], int]: ...
 
     @abstractmethod
     async def create(self, data: dict) -> SubTribe: ...
@@ -33,17 +37,24 @@ class SubTribeRepository(BaseSubTribeRepository):
     def __init__(self, db: AsyncSession):
         super().__init__(db)
 
-    async def get_by_id(self, subtribe_id: uuid.UUID) -> SubTribe | None:
+    async def get_by_id(self, subtribe_id: uuid.UUID) -> Optional[SubTribe]:
         try:
             result = await self.db.execute(select(SubTribe).where(SubTribe.id == subtribe_id))
             return result.scalar_one_or_none()
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to fetch subtribe") from e
 
-    async def get_all(self, limit: int, offset: int) -> tuple[list[SubTribe], int]:
+    async def get_all(
+        self, limit: int, offset: int, tribe_id: Optional[uuid.UUID] = None
+    ) -> tuple[list[SubTribe], int]:
         try:
-            total = (await self.db.execute(select(func.count(SubTribe.id)))).scalar()
-            result = await self.db.execute(select(SubTribe).limit(limit).offset(offset))
+            query = select(SubTribe)
+            count_query = select(func.count(SubTribe.id))
+            if tribe_id:
+                query = query.where(SubTribe.tribe_id == tribe_id)
+                count_query = count_query.where(SubTribe.tribe_id == tribe_id)
+            total = (await self.db.execute(count_query)).scalar()
+            result = await self.db.execute(query.limit(limit).offset(offset))
             return list(result.scalars().all()), total
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to list subtribes") from e
@@ -75,4 +86,3 @@ class SubTribeRepository(BaseSubTribeRepository):
         except Exception as e:
             await self.db.rollback()
             raise HTTPException(status_code=500, detail="Database error: failed to delete subtribe") from e
-

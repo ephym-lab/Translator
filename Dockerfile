@@ -9,7 +9,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies into the system Python (no venv needed in Docker)
-RUN uv sync --frozen --no-dev
+# RUN uv sync --frozen --no-dev
+RUN UV_HTTP_TIMEOUT=600 uv sync --frozen --no-dev
 
 # Copy application code
 COPY . .

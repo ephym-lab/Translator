@@ -1,5 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +21,7 @@ class BaseSubTribeService(ABC):
     async def get(self, subtribe_id: uuid.UUID) -> SubTribe: ...
 
     @abstractmethod
-    async def list(self, limit: int, offset: int) -> tuple[list[SubTribe], int]: ...
+    async def list(self, limit: int, offset: int, tribe_id: Optional[uuid.UUID] = None) -> tuple[list[SubTribe], int]: ...
 
     @abstractmethod
     async def update(self, subtribe_id: uuid.UUID, data: SubTribeUpdate) -> SubTribe: ...
@@ -43,8 +44,10 @@ class SubTribeService(BaseSubTribeService):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "SubTribe not found.")
         return subtribe
 
-    async def list(self, limit: int = 20, offset: int = 0) -> tuple[list[SubTribe], int]:
-        return await self.repo.get_all(limit, offset)
+    async def list(
+        self, limit: int = 20, offset: int = 0, tribe_id: Optional[uuid.UUID] = None
+    ) -> tuple[list[SubTribe], int]:
+        return await self.repo.get_all(limit, offset, tribe_id=tribe_id)
 
     async def update(self, subtribe_id: uuid.UUID, data: SubTribeUpdate) -> SubTribe:
         subtribe = await self.get(subtribe_id)

@@ -1,9 +1,11 @@
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_db
+from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.subtribe import SubTribeCreate, SubTribeResponse, SubTribeUpdate
 from app.schemas.pagination import PaginatedResponse
@@ -20,14 +22,21 @@ def get_service(db: AsyncSession = Depends(get_db)) -> SubTribeService:
 async def create_subtribe(
     data: SubTribeCreate,
     svc: SubTribeService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Create a subtribe. Admin only."""
     return await svc.create(data)
 
 
 @router.get("/", response_model=PaginatedResponse[SubTribeResponse])
-async def list_subtribes(limit: int = 20, offset: int = 0, svc: SubTribeService = Depends(get_service)):
-    items, total = await svc.list(limit, offset)
+async def list_subtribes(
+    limit: int = 20,
+    offset: int = 0,
+    tribe_id: Optional[uuid.UUID] = None,
+    svc: SubTribeService = Depends(get_service),
+):
+    """List subtribes. Optional filter by tribe_id (for cascading dropdowns). Public."""
+    items, total = await svc.list(limit, offset, tribe_id=tribe_id)
     return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
 
 
@@ -41,8 +50,9 @@ async def update_subtribe(
     subtribe_id: uuid.UUID,
     data: SubTribeUpdate,
     svc: SubTribeService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Update a subtribe. Admin only."""
     return await svc.update(subtribe_id, data)
 
 
@@ -50,6 +60,7 @@ async def update_subtribe(
 async def delete_subtribe(
     subtribe_id: uuid.UUID,
     svc: SubTribeService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Delete a subtribe. Admin only."""
     await svc.delete(subtribe_id)

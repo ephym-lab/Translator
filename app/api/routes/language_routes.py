@@ -1,9 +1,11 @@
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_db
+from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.language import LanguageCreate, LanguageResponse, LanguageUpdate
 from app.schemas.pagination import PaginatedResponse
@@ -20,14 +22,21 @@ def get_service(db: AsyncSession = Depends(get_db)) -> LanguageService:
 async def create_language(
     data: LanguageCreate,
     svc: LanguageService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Create a language. Admin only."""
     return await svc.create(data)
 
 
 @router.get("/", response_model=PaginatedResponse[LanguageResponse])
-async def list_languages(limit: int = 20, offset: int = 0, svc: LanguageService = Depends(get_service)):
-    items, total = await svc.list(limit, offset)
+async def list_languages(
+    limit: int = 20,
+    offset: int = 0,
+    subtribe_id: Optional[uuid.UUID] = None,
+    svc: LanguageService = Depends(get_service),
+):
+    """List languages. Optional filter by subtribe_id (for cascading dropdowns). Public."""
+    items, total = await svc.list(limit, offset, subtribe_id=subtribe_id)
     return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
 
 
@@ -41,8 +50,9 @@ async def update_language(
     language_id: uuid.UUID,
     data: LanguageUpdate,
     svc: LanguageService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Update a language. Admin only."""
     return await svc.update(language_id, data)
 
 
@@ -50,6 +60,7 @@ async def update_language(
 async def delete_language(
     language_id: uuid.UUID,
     svc: LanguageService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Delete a language. Admin only."""
     await svc.delete(language_id)

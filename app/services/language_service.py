@@ -1,5 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +21,7 @@ class BaseLanguageService(ABC):
     async def get(self, language_id: uuid.UUID) -> Language: ...
 
     @abstractmethod
-    async def list(self, limit: int, offset: int) -> tuple[list[Language], int]: ...
+    async def list(self, limit: int, offset: int, subtribe_id: Optional[uuid.UUID] = None) -> tuple[list[Language], int]: ...
 
     @abstractmethod
     async def update(self, language_id: uuid.UUID, data: LanguageUpdate) -> Language: ...
@@ -35,7 +36,6 @@ class LanguageService(BaseLanguageService):
         self.repo = LanguageRepository(db)
 
     async def create(self, data: LanguageCreate) -> Language:
-        # Business rule: language codes must be unique
         if await self.repo.get_by_code(data.code):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Language code '{data.code}' already exists.")
         return await self.repo.create(data.model_dump())
@@ -46,8 +46,10 @@ class LanguageService(BaseLanguageService):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Language not found.")
         return lang
 
-    async def list(self, limit: int = 20, offset: int = 0) -> tuple[list[Language], int]:
-        return await self.repo.get_all(limit, offset)
+    async def list(
+        self, limit: int = 20, offset: int = 0, subtribe_id: Optional[uuid.UUID] = None
+    ) -> tuple[list[Language], int]:
+        return await self.repo.get_all(limit, offset, subtribe_id=subtribe_id)
 
     async def update(self, language_id: uuid.UUID, data: LanguageUpdate) -> Language:
         lang = await self.get(language_id)

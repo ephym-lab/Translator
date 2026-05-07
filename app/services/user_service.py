@@ -1,6 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +15,10 @@ from app.core.security import (
 from app.models.otp import OTP
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
+from app.models.language import Language
 from app.repositories.user_repository import UserRepository
+from app.repositories.user_language_repository import UserLanguageRepository
+from app.repositories.language_repository import LanguageRepository
 from app.schemas.user import UserCreate, UserUpdate, LoginRequest, TokenResponse
 from app.services.email_service import email_service
 
@@ -47,19 +51,37 @@ class BaseUserService(ABC):
     @abstractmethod
     async def delete_user(self, user_id: uuid.UUID) -> None: ...
 
+    @abstractmethod
+    async def add_language(self, user_id: uuid.UUID, language_id: uuid.UUID) -> list[Language]: ...
+
+    @abstractmethod
+    async def remove_language(self, user_id: uuid.UUID, language_id: uuid.UUID) -> None: ...
+
+    @abstractmethod
+    async def get_user_languages(self, user_id: uuid.UUID) -> list[Language]: ...
+
 
 class UserService(BaseUserService):
-    """Business logic layer — all DB operations delegated to UserRepository."""
+    """Business logic layer — all DB operations delegated to repositories."""
 
     def __init__(self, db: AsyncSession):
         super().__init__(db)
         self.repo = UserRepository(db)
+        self.lang_repo = LanguageRepository(db)
+        self.ul_repo = UserLanguageRepository(db)
 
     async def register(self, data: UserCreate) -> dict:
         # Business rule: unique email + username
         existing = await self.repo.get_by_email_or_username(data.email, data.username)
         if existing:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email or username already registered.")
+
+        # Validate all language_ids exist
+        if not data.languages:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "At least one language is required.")
+        found = await self.lang_repo.get_by_ids(data.languages)
+        if len(found) != len(data.languages):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "One or more language IDs are invalid.")
 
         user = User(
             id=uuid.uuid4(),
@@ -70,7 +92,6 @@ class UserService(BaseUserService):
             gender=data.gender,
             phone=data.phone,
             avatar=data.avatar,
-            language_id=data.language_id,
         )
 
         otp_code = generate_otp()
@@ -81,24 +102,25 @@ class UserService(BaseUserService):
             expires_at=datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES),
         )
 
-        # Both persisted in one commit via repo
+        # Stage user, OTP, and UserLanguage rows in one transaction
         await self.repo.create_otp(otp)
         await self.repo.create(user)
+        await self.ul_repo.bulk_add_languages(user.id, data.languages)
+        await self.db.commit()
 
         await email_service.send_otp_email(data.email, otp_code)
         return {
-                    "message": "Registration successful. Check your email for the OTP.",
-                    "data":{
-                        "user_id":str(user.id),
-                        "email":user.email,
-                        "username":user.username,
-                        "name":user.name,
-                        "gender":user.gender,
-                        "phone":user.phone,
-                        "avatar":user.avatar,
-                        
-                    }
-               }
+            "message": "Registration successful. Check your email for the OTP.",
+            "data": {
+                "user_id": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "name": user.name,
+                "gender": user.gender,
+                "phone": user.phone,
+                "avatar": user.avatar,
+            }
+        }
 
     async def verify_otp(self, email: str, code: str) -> dict:
         otp = await self.repo.get_unused_otp(email, code)
@@ -109,7 +131,6 @@ class UserService(BaseUserService):
 
         otp.is_used = True
 
-        # Business rule: mark user as verified
         user = await self.repo.get_by_email(email)
         if not user:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found.")
@@ -126,7 +147,6 @@ class UserService(BaseUserService):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password.")
         if not verify_password(data.password, user.hashed_password):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password.")
-
         if not user.is_verified:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Please verify your email first.")
         if not user.is_active:
@@ -161,7 +181,6 @@ class UserService(BaseUserService):
         if not stored:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Refresh token not found or revoked.")
 
-        # Token rotation — delete old, issue new
         await self.repo.delete_refresh_token(stored)
 
         token_data = {"sub": user_id}
@@ -197,3 +216,24 @@ class UserService(BaseUserService):
     async def delete_user(self, user_id: uuid.UUID) -> None:
         user = await self.get_user(user_id)
         await self.repo.delete(user)
+
+    # ─── Language management ──────────────────────────────────────────────────
+
+    async def add_language(self, user_id: uuid.UUID, language_id: uuid.UUID) -> list[Language]:
+        lang = await self.lang_repo.get_by_id(language_id)
+        if not lang:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Language not found.")
+        existing = await self.ul_repo.get_user_language(user_id, language_id)
+        if existing:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Language already added.")
+        await self.ul_repo.add_language(user_id, language_id)
+        return await self.ul_repo.get_user_languages(user_id)
+
+    async def remove_language(self, user_id: uuid.UUID, language_id: uuid.UUID) -> None:
+        existing = await self.ul_repo.get_user_language(user_id, language_id)
+        if not existing:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Language not found on this user.")
+        await self.ul_repo.remove_language(user_id, language_id)
+
+    async def get_user_languages(self, user_id: uuid.UUID) -> list[Language]:
+        return await self.ul_repo.get_user_languages(user_id)

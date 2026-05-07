@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -15,8 +15,10 @@ class Language(TimestampMixin, Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String(100), nullable=False)
     code = Column(String(10), unique=True, nullable=False, index=True)
+    subtribe_id = Column(UUID(as_uuid=True), ForeignKey("subtribes.id"), nullable=True)
 
     # Relationships
-    users = relationship("User", back_populates="language")
+    subtribe = relationship("SubTribe", back_populates="languages")
+    user_languages = relationship("UserLanguage", back_populates="language", cascade="all, delete-orphan")
+    users = relationship("User", secondary="user_languages", viewonly=True)
     unclean_datasets = relationship("UncleanDataset", back_populates="language")
-    subtribes = relationship("SubTribe", back_populates="language")

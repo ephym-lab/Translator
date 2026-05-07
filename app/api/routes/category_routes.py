@@ -3,7 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_db
+from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
 from app.schemas.pagination import PaginatedResponse
@@ -20,7 +21,7 @@ def get_service(db: AsyncSession = Depends(get_db)) -> CategoryService:
 async def create_category(
     data: CategoryCreate,
     svc: CategoryService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
     return await svc.create(data)
 
@@ -41,7 +42,7 @@ async def update_category(
     category_id: uuid.UUID,
     data: CategoryUpdate,
     svc: CategoryService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
     return await svc.update(category_id, data)
 
@@ -50,6 +51,6 @@ async def update_category(
 async def delete_category(
     category_id: uuid.UUID,
     svc: CategoryService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
     await svc.delete(category_id)

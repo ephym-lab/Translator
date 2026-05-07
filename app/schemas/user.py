@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
-from app.models.user import GenderEnum
+from app.models.user import GenderEnum, RoleEnum
+from app.schemas.language import LanguageNestedResponse
 
 
 class UserCreate(BaseModel):
@@ -15,7 +16,7 @@ class UserCreate(BaseModel):
     gender: GenderEnum
     phone: Optional[str] = None
     avatar: Optional[str] = None
-    language_id: Optional[uuid.UUID] = None
+    languages: List[uuid.UUID]  # at least one language required
 
 
 class UserUpdate(BaseModel):
@@ -23,7 +24,6 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     avatar: Optional[str] = None
     phone: Optional[str] = None
-    language_id: Optional[uuid.UUID] = None
 
 
 class UserResponse(BaseModel):
@@ -32,11 +32,12 @@ class UserResponse(BaseModel):
     name: str
     email: EmailStr
     gender: GenderEnum
+    role: RoleEnum
     phone: Optional[str] = None
     avatar: Optional[str] = None
     is_verified: bool
     is_active: bool
-    language_id: Optional[uuid.UUID] = None
+    languages: List[LanguageNestedResponse] = []
     created_at: datetime
     updated_at: datetime
 
@@ -61,3 +62,7 @@ class RefreshRequest(BaseModel):
 class OTPVerify(BaseModel):
     email: EmailStr
     code: str
+
+
+class AddLanguageRequest(BaseModel):
+    language_id: uuid.UUID

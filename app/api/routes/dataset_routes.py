@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.dataset import DatasetCreate, DatasetResponse, DatasetUpdate
 from app.schemas.pagination import PaginatedResponse
@@ -20,7 +21,7 @@ def get_service(db: AsyncSession = Depends(get_db)) -> DatasetService:
 async def create_dataset(
     data: DatasetCreate,
     svc: DatasetService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
     return await svc.create(data)
 
@@ -50,6 +51,6 @@ async def update_dataset(
 async def delete_dataset(
     dataset_id: uuid.UUID,
     svc: DatasetService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
     await svc.delete(dataset_id)

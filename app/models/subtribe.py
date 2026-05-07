@@ -15,8 +15,7 @@ class SubTribe(TimestampMixin, Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String(100), nullable=False)
     tribe_id = Column(UUID(as_uuid=True), ForeignKey("tribes.id"), nullable=False)
-    language_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=True)
 
     # Relationships
     tribe = relationship("Tribe", back_populates="subtribes")
-    language = relationship("Language", back_populates="subtribes")
+    languages = relationship("Language", back_populates="subtribe")

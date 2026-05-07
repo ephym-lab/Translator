@@ -3,7 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_db
+from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.tribe import TribeCreate, TribeResponse, TribeUpdate
 from app.schemas.pagination import PaginatedResponse
@@ -20,13 +21,15 @@ def get_service(db: AsyncSession = Depends(get_db)) -> TribeService:
 async def create_tribe(
     data: TribeCreate,
     svc: TribeService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Create a tribe. Admin only."""
     return await svc.create(data)
 
 
 @router.get("/", response_model=PaginatedResponse[TribeResponse])
 async def list_tribes(limit: int = 20, offset: int = 0, svc: TribeService = Depends(get_service)):
+    """List all tribes. Public."""
     items, total = await svc.list(limit, offset)
     return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
 
@@ -41,8 +44,9 @@ async def update_tribe(
     tribe_id: uuid.UUID,
     data: TribeUpdate,
     svc: TribeService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Update a tribe. Admin only."""
     return await svc.update(tribe_id, data)
 
 
@@ -50,6 +54,7 @@ async def update_tribe(
 async def delete_tribe(
     tribe_id: uuid.UUID,
     svc: TribeService = Depends(get_service),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
+    """Delete a tribe. Admin only."""
     await svc.delete(tribe_id)
