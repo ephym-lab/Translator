@@ -4,10 +4,9 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.language import Language
 from app.repositories.language_repository import LanguageRepository
-from app.schemas.language import LanguageCreate, LanguageUpdate
+from app.schemas.language import LanguageCreate, LanguageUpdate, LanguageResponse
 
 
 class BaseLanguageService(ABC):
@@ -21,7 +20,7 @@ class BaseLanguageService(ABC):
     async def get(self, language_id: uuid.UUID) -> Language: ...
 
     @abstractmethod
-    async def list(self, limit: int, offset: int, subtribe_id: Optional[uuid.UUID] = None) -> tuple[list[Language], int]: ...
+    async def listall(self, limit: int, offset: int, subtribe_id: Optional[uuid.UUID] = None) -> tuple[list[Language], int]: ...
 
     @abstractmethod
     async def update(self, language_id: uuid.UUID, data: LanguageUpdate) -> Language: ...
@@ -40,7 +39,8 @@ class LanguageService(BaseLanguageService):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"A language named '{data.name}' already exists.")
         if await self.repo.get_by_code(data.code):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Language code '{data.code}' already exists.")
-        return await self.repo.create(data.model_dump())
+        lang = await self.repo.create(data.model_dump())
+        return LanguageResponse(message="Language created successfully.", data=lang)
 
     async def get(self, language_id: uuid.UUID) -> Language:
         lang = await self.repo.get_by_id(language_id)
@@ -48,7 +48,7 @@ class LanguageService(BaseLanguageService):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Language not found.")
         return lang
 
-    async def list(
+    async def listall(
         self, limit: int = 20, offset: int = 0, subtribe_id: Optional[uuid.UUID] = None
     ) -> tuple[list[Language], int]:
         return await self.repo.get_all(limit, offset, subtribe_id=subtribe_id)

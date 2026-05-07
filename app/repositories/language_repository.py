@@ -1,14 +1,12 @@
 import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
-
 from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 from app.models.language import Language
 from app.models.subtribe import SubTribe
+from sqlalchemy.orm import selectinload
 
 
 class BaseLanguageRepository(ABC):
@@ -94,7 +92,7 @@ class LanguageRepository(BaseLanguageRepository):
             result = await self.db.execute(query.limit(limit).offset(offset))
             return list(result.scalars().all()), total
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Database error: failed to list languages") from e
+            raise HTTPException(status_code=500, detail="Database error: failed to list languages"+str(e)) from e
 
     async def get_by_ids(self, ids: list[uuid.UUID]) -> list[Language]:
         try:

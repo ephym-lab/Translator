@@ -1,12 +1,10 @@
 import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
-
 from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 from app.models.user_language import UserLanguage
 from app.models.language import Language
 from app.models.subtribe import SubTribe

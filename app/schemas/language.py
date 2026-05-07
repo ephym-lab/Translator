@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
-
 from app.schemas.subtribe import SubTribeNestedResponse
 
 
@@ -18,7 +17,7 @@ class LanguageUpdate(BaseModel):
     subtribe_id: Optional[uuid.UUID] = None
 
 
-class LanguageResponse(BaseModel):
+class LanguageData(BaseModel):
     id: uuid.UUID
     name: str
     code: str
@@ -26,6 +25,10 @@ class LanguageResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class LanguageResponse(BaseModel):
+    message: str
+    data: LanguageData
 
 
 class LanguageNestedResponse(BaseModel):

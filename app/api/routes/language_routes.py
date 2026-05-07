@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
-from app.schemas.language import LanguageCreate, LanguageResponse, LanguageUpdate
+from app.schemas.language import LanguageCreate, LanguageResponse, LanguageUpdate,LanguageData
 from app.schemas.pagination import PaginatedResponse
 from app.services.language_service import LanguageService
 
@@ -28,7 +28,7 @@ async def create_language(
     return await svc.create(data)
 
 
-@router.get("/", response_model=PaginatedResponse[LanguageResponse])
+@router.get("/", response_model=PaginatedResponse[LanguageData])
 async def list_languages(
     limit: int = 20,
     offset: int = 0,
@@ -36,7 +36,7 @@ async def list_languages(
     svc: LanguageService = Depends(get_service),
 ):
     """List languages. Optional filter by subtribe_id (for cascading dropdowns). Public."""
-    items, total = await svc.list(limit, offset, subtribe_id=subtribe_id)
+    items, total = await svc.listall(limit, offset, subtribe_id=subtribe_id)
     return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
 
 
