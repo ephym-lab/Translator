@@ -1,11 +1,15 @@
 import uuid
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.response import Response
+from app.models.unclean_dataset import UncleanDataset
 from app.repositories.response_repository import ResponseRepository
+from app.repositories.user_dataset_session_repository import UserDatasetSessionRepository
+from app.repositories.user_language_repository import UserLanguageRepository
 from app.schemas.response import ResponseCreate, ResponseUpdate
 
 
@@ -21,7 +25,13 @@ class BaseResponseService(ABC):
 
     @abstractmethod
     async def list_by_dataset(
-        self, dataset_id: uuid.UUID, limit: int, offset: int
+        self, dataset_id: uuid.UUID, limit: int, offset: int,
+        language_id: Optional[uuid.UUID] = None,
+    ) -> tuple[list[Response], int]: ...
+
+    @abstractmethod
+    async def list_all(
+        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None
     ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
@@ -30,17 +40,62 @@ class BaseResponseService(ABC):
     @abstractmethod
     async def delete(self, response_id: uuid.UUID, user_id: uuid.UUID) -> None: ...
 
+    @abstractmethod
+    async def next_dataset(self, user_id: uuid.UUID, language_id: uuid.UUID) -> UncleanDataset: ...
+
 
 class ResponseService(BaseResponseService):
     def __init__(self, db: AsyncSession):
         super().__init__(db)
         self.repo = ResponseRepository(db)
+        self.session_repo = UserDatasetSessionRepository(db)
+        self.ul_repo = UserLanguageRepository(db)
+
+    # ─── Helpers ─────────────────────────────────────────────────────────────
+
+    async def _validate_user_language(self, user_id: uuid.UUID, language_id: uuid.UUID) -> None:
+        """Raise 403 if the language is not in the user's registered languages."""
+        user_langs = await self.ul_repo.get_user_languages(user_id)
+        user_lang_ids = {lang.id for lang in user_langs}
+        if language_id not in user_lang_ids:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "You can only work in a language you have registered.",
+            )
+
+    # ─── Endpoints ───────────────────────────────────────────────────────────
+
+    async def next_dataset(self, user_id: uuid.UUID, language_id: uuid.UUID) -> UncleanDataset:
+        """Return the next unseen dataset for this user + language, recording the session."""
+        await self._validate_user_language(user_id, language_id)
+
+        dataset = await self.session_repo.next_unseen(user_id, language_id)
+        if not dataset:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND,
+                "No more datasets available for this language. Great work!",
+            )
+
+        await self.session_repo.record_session(user_id, dataset.id, language_id)
+        return dataset
 
     async def submit(self, user_id: uuid.UUID, data: ResponseCreate) -> Response:
+        # 1. Validate the language is registered for this user
+        await self._validate_user_language(user_id, data.language_id)
+
+        # 2. Prevent duplicate response (user + dataset + language)
+        existing = await self.repo.get_by_user_dataset_language(user_id, data.dataset_id, data.language_id)
+        if existing:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "You have already submitted a response for this dataset in this language.",
+            )
+
         response = Response(
             id=uuid.uuid4(),
             response_text=data.response_text,
             dataset_id=data.dataset_id,
+            language_id=data.language_id,
             user_id=user_id,
         )
         return await self.repo.create(response)
@@ -52,13 +107,18 @@ class ResponseService(BaseResponseService):
         return resp
 
     async def list_by_dataset(
-        self, dataset_id: uuid.UUID, limit: int = 20, offset: int = 0
+        self, dataset_id: uuid.UUID, limit: int = 20, offset: int = 0,
+        language_id: Optional[uuid.UUID] = None,
     ) -> tuple[list[Response], int]:
-        return await self.repo.get_all_for_dataset(dataset_id, limit, offset)
+        return await self.repo.get_all_for_dataset(dataset_id, limit, offset, language_id=language_id)
+
+    async def list_all(
+        self, limit: int = 20, offset: int = 0, language_id: Optional[uuid.UUID] = None
+    ) -> tuple[list[Response], int]:
+        return await self.repo.get_all(limit, offset, language_id=language_id)
 
     async def update(self, response_id: uuid.UUID, user_id: uuid.UUID, data: ResponseUpdate) -> Response:
         resp = await self.get(response_id)
-        # Business rule: only the author can edit
         if resp.user_id != user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Cannot edit another user's response.")
         resp.response_text = data.response_text
@@ -66,11 +126,6 @@ class ResponseService(BaseResponseService):
 
     async def delete(self, response_id: uuid.UUID, user_id: uuid.UUID) -> None:
         resp = await self.get(response_id)
-        # Business rule: only the author can delete
         if resp.user_id != user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Cannot delete another user's response.")
         await self.repo.delete(resp)
-
-    #get all responses in general
-    async def list_all(self, limit: int = 20, offset: int = 0) -> tuple[list[Response], int]:
-        return await self.repo.get_all(limit, offset)

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, Text, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Text, DateTime, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -9,7 +9,7 @@ from app.db.base import Base, TimestampMixin
 
 
 class Response(TimestampMixin, Base):
-    """A contributor's response to an UncleanDataset entry."""
+    """A contributor's response to an UncleanDataset entry in a specific language."""
 
     __tablename__ = "responses"
 
@@ -20,8 +20,16 @@ class Response(TimestampMixin, Base):
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     dataset_id = Column(UUID(as_uuid=True), ForeignKey("unclean_datasets.id"), nullable=False)
+    language_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=False)
+
+    __table_args__ = (
+        # A user can respond to the same dataset in multiple languages,
+        # but NOT twice in the same language for the same dataset.
+        UniqueConstraint("user_id", "dataset_id", "language_id", name="uq_user_dataset_language"),
+    )
 
     # Relationships
     user = relationship("User", back_populates="responses")
     dataset = relationship("UncleanDataset", back_populates="responses")
+    language = relationship("Language")
     votes = relationship("ResponseVote", back_populates="response", cascade="all, delete-orphan")

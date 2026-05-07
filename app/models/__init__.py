@@ -10,4 +10,6 @@ from app.models.refresh_token import RefreshToken   # noqa: F401
 from app.models.unclean_dataset import UncleanDataset, DatasetLevelEnum  # noqa: F401
 from app.models.response import Response            # noqa: F401
 from app.models.response_vote import ResponseVote, VoteEnum  # noqa: F401
+from app.models.user_dataset_session import UserDatasetSession  # noqa: F401
+
 
