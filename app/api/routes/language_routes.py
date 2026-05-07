@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
-from app.schemas.language import LanguageCreate, LanguageResponse, LanguageUpdate,LanguageData
-from app.schemas.pagination import PaginatedResponse
+from app.schemas.language import LanguageCreate, LanguageResponse, LanguageUpdate, LanguageData
+from app.schemas.pagination import PaginatedResponse, PaginatedData
 from app.services.language_service import LanguageService
 
 router = APIRouter(prefix="/languages", tags=["Languages"])
@@ -37,12 +37,16 @@ async def list_languages(
 ):
     """List languages. Optional filter by subtribe_id (for cascading dropdowns). Public."""
     items, total = await svc.listall(limit, offset, subtribe_id=subtribe_id)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+    return PaginatedResponse(
+        message="Languages retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+    )
 
 
 @router.get("/{language_id}", response_model=LanguageResponse)
 async def get_language(language_id: uuid.UUID, svc: LanguageService = Depends(get_service)):
-    return await svc.get(language_id)
+    lang = await svc.get(language_id)
+    return LanguageResponse(message="Language fetched successfully.", data=lang)
 
 
 @router.patch("/{language_id}", response_model=LanguageResponse)
@@ -53,7 +57,8 @@ async def update_language(
     _: User = Depends(require_admin),
 ):
     """Update a language. Admin only."""
-    return await svc.update(language_id, data)
+    lang = await svc.update(language_id, data)
+    return LanguageResponse(message="Language updated successfully.", data=lang)
 
 
 @router.delete("/{language_id}", status_code=status.HTTP_204_NO_CONTENT)

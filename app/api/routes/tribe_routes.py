@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
-from app.schemas.tribe import TribeCreate, TribeResponse, TribeUpdate
-from app.schemas.pagination import PaginatedResponse
+from app.schemas.tribe import TribeCreate, TribeResponse, TribeUpdate, TribeData
+from app.schemas.pagination import PaginatedResponse, PaginatedData
 from app.services.tribe_service import TribeService
 
 router = APIRouter(prefix="/tribes", tags=["Tribes"])
@@ -27,11 +27,14 @@ async def create_tribe(
     return await svc.create(data)
 
 
-@router.get("/", response_model=PaginatedResponse[TribeResponse])
+@router.get("/", response_model=PaginatedResponse[TribeData])
 async def list_tribes(limit: int = 20, offset: int = 0, svc: TribeService = Depends(get_service)):
     """List all tribes. Public."""
     items, total = await svc.list(limit, offset)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+    return PaginatedResponse(
+        message="Tribes retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+    )
 
 
 @router.get("/{tribe_id}", response_model=TribeResponse)

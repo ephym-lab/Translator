@@ -45,7 +45,10 @@ class TribeService(BaseTribeService):
         tribe = await self.repo.get_by_id(tribe_id)
         if not tribe:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Tribe not found.")
-        return tribe
+        return {
+            "message": "Tribe retrieved successfully.",
+            "data": tribe
+        }
 
     async def list(self, limit: int = 20, offset: int = 0) -> tuple[list[Tribe], int]:
         return await self.repo.get_all(limit, offset)

@@ -7,7 +7,7 @@ from app.api.deps import get_current_user, get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.dataset import DatasetCreate, DatasetResponse, DatasetUpdate
-from app.schemas.pagination import PaginatedResponse
+from app.schemas.pagination import PaginatedResponse, PaginatedData
 from app.services.dataset_service import DatasetService
 
 router = APIRouter(prefix="/datasets", tags=["Datasets"])
@@ -29,7 +29,10 @@ async def create_dataset(
 @router.get("/", response_model=PaginatedResponse[DatasetResponse])
 async def list_datasets(limit: int = 20, offset: int = 0, svc: DatasetService = Depends(get_service)):
     items, total = await svc.list(limit, offset)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+    return PaginatedResponse(
+        message="Datasets retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+    )
 
 
 @router.get("/{dataset_id}", response_model=DatasetResponse)

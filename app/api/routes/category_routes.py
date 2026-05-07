@@ -7,7 +7,7 @@ from app.api.deps import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
-from app.schemas.pagination import PaginatedResponse
+from app.schemas.pagination import PaginatedResponse, PaginatedData
 from app.services.category_service import CategoryService
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -29,7 +29,10 @@ async def create_category(
 @router.get("/", response_model=PaginatedResponse[CategoryResponse])
 async def list_categories(limit: int = 20, offset: int = 0, svc: CategoryService = Depends(get_service)):
     items, total = await svc.list(limit, offset)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+    return PaginatedResponse(
+        message="Categories retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+    )
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)

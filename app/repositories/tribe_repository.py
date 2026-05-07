@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.tribe import Tribe
 
 

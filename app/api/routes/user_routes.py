@@ -7,10 +7,10 @@ from app.api.deps import get_current_user, get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
 from app.schemas.language import LanguageNestedResponse
-from app.schemas.pagination import PaginatedResponse
+from app.schemas.pagination import PaginatedResponse, PaginatedData
 from app.schemas.user import (
     AddLanguageRequest, LoginRequest, OTPVerify, RefreshRequest,
-    TokenResponse, UserCreate, UserResponse, UserUpdate,LoginResponse
+    TokenResponse, UserCreate, UserResponse, UserUpdate, LoginResponse,
 )
 from app.services.user_service import UserService
 
@@ -92,7 +92,7 @@ async def remove_my_language(
     await svc.remove_language(current_user.id, language_id)
 
 
-#Admin endpoints 
+# ─── Admin endpoints ──────────────────────────────────────────────────────────
 
 @router.get("/", response_model=PaginatedResponse[UserResponse])
 async def list_users(
@@ -103,7 +103,10 @@ async def list_users(
 ):
     """List all users (paginated). Requires authentication."""
     users, total = await svc.list_users(limit, offset)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=users)
+    return PaginatedResponse(
+        message="Users retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=users),
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -124,10 +127,10 @@ async def delete_user(
     """Delete a user. Admin only."""
     await svc.delete_user(user_id)
 
-#delete user by email
+
 @router.delete("/delete/{email}")
 async def delete_user_by_email(
     email: str,
-    svc: UserService = Depends(get_service)
+    svc: UserService = Depends(get_service),
 ):
     return await svc.delete_user_by_email(email)

@@ -4,12 +4,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 from app.api.deps import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
-from app.schemas.subtribe import SubTribeCreate, SubTribeResponse, SubTribeUpdate
-from app.schemas.pagination import PaginatedResponse
+from app.schemas.subtribe import SubTribeCreate, SubTribeResponse, SubTribeUpdate, SubTribeData
+from app.schemas.pagination import PaginatedResponse, PaginatedData
 from app.services.subtribe_service import SubTribeService
 
 router = APIRouter(prefix="/subtribes", tags=["SubTribes"])
@@ -29,7 +28,7 @@ async def create_subtribe(
     return await svc.create(data)
 
 
-@router.get("/", response_model=PaginatedResponse[SubTribeResponse])
+@router.get("/", response_model=PaginatedResponse[SubTribeData])
 async def list_subtribes(
     limit: int = 20,
     offset: int = 0,
@@ -38,7 +37,10 @@ async def list_subtribes(
 ):
     """List subtribes. Optional filter by tribe_id (for cascading dropdowns). Public."""
     items, total = await svc.list(limit, offset, tribe_id=tribe_id)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+    return PaginatedResponse(
+        message="SubTribes retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+    )
 
 
 @router.get("/{subtribe_id}", response_model=SubTribeResponse)

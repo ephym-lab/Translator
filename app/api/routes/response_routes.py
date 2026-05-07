@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.response import ResponseCreate, ResponseSchema, ResponseUpdate
-from app.schemas.pagination import PaginatedResponse
+from app.schemas.pagination import PaginatedResponse, PaginatedData
 from app.services.response_service import ResponseService
 
 router = APIRouter(prefix="/responses", tags=["Responses"])
@@ -25,6 +25,7 @@ async def submit_response(
     """Submit a response to a dataset entry."""
     return await svc.submit(current_user.id, data)
 
+
 @router.get("/", response_model=PaginatedResponse[ResponseSchema])
 async def list_all_responses(
     limit: int = 20,
@@ -32,7 +33,10 @@ async def list_all_responses(
     svc: ResponseService = Depends(get_service),
 ):
     items, total = await svc.list_all(limit, offset)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+    return PaginatedResponse(
+        message="Responses retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+    )
 
 
 @router.get("/dataset/{dataset_id}", response_model=PaginatedResponse[ResponseSchema])
@@ -43,7 +47,10 @@ async def list_responses_for_dataset(
     svc: ResponseService = Depends(get_service),
 ):
     items, total = await svc.list_by_dataset(dataset_id, limit, offset)
-    return PaginatedResponse(total=total, limit=limit, offset=offset, items=items)
+    return PaginatedResponse(
+        message="Responses for dataset retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+    )
 
 
 @router.get("/{response_id}", response_model=ResponseSchema)
