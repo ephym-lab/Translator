@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.subtribe import SubTribe
 from app.repositories.subtribe_repository import SubTribeRepository
-from app.schemas.subtribe import SubTribeCreate, SubTribeUpdate
+from app.schemas.subtribe import SubTribeCreate, SubTribeUpdate,SubTribeData
 
 
 class BaseSubTribeService(ABC):
@@ -36,7 +36,16 @@ class SubTribeService(BaseSubTribeService):
         self.repo = SubTribeRepository(db)
 
     async def create(self, data: SubTribeCreate) -> SubTribe:
-        return await self.repo.create(data.model_dump())
+        if await self.repo.get_by_name_and_tribe(data.name, data.tribe_id):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"A subtribe named '{data.name}' already exists under this tribe.",
+            )
+        subtribe = await self.repo.create(data.model_dump())
+        return {
+            "message": "SubTribe created successfully.",
+            "data": SubTribeData(**subtribe.__dict__)
+        }
 
     async def get(self, subtribe_id: uuid.UUID) -> SubTribe:
         subtribe = await self.repo.get_by_id(subtribe_id)

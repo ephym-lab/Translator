@@ -15,14 +15,18 @@ class SubTribeUpdate(BaseModel):
     name: Optional[str] = None
     tribe_id: Optional[uuid.UUID] = None
 
-
-class SubTribeResponse(BaseModel):
+class SubTribeData(BaseModel):
     id: uuid.UUID
     name: str
     tribe_id: uuid.UUID
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class SubTribeResponse(BaseModel):
+    message: str
+    data: SubTribeData
+    
 
 
 class SubTribeNestedResponse(BaseModel):

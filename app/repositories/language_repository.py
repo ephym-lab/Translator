@@ -22,6 +22,9 @@ class BaseLanguageRepository(ABC):
     async def get_by_code(self, code: str) -> Optional[Language]: ...
 
     @abstractmethod
+    async def get_by_name(self, name: str) -> Optional[Language]: ...
+
+    @abstractmethod
     async def get_all(
         self, limit: int, offset: int, subtribe_id: Optional[uuid.UUID] = None
     ) -> tuple[list[Language], int]: ...
@@ -65,6 +68,13 @@ class LanguageRepository(BaseLanguageRepository):
     async def get_by_code(self, code: str) -> Optional[Language]:
         try:
             result = await self.db.execute(select(Language).where(Language.code == code))
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database error: failed to fetch language — {e}") from e
+
+    async def get_by_name(self, name: str) -> Optional[Language]:
+        try:
+            result = await self.db.execute(select(Language).where(Language.name == name))
             return result.scalar_one_or_none()
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Database error: failed to fetch language — {e}") from e

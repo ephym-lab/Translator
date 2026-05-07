@@ -10,7 +10,7 @@ from app.schemas.language import LanguageNestedResponse
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import (
     AddLanguageRequest, LoginRequest, OTPVerify, RefreshRequest,
-    TokenResponse, UserCreate, UserResponse, UserUpdate,
+    TokenResponse, UserCreate, UserResponse, UserUpdate,LoginResponse
 )
 from app.services.user_service import UserService
 
@@ -33,7 +33,7 @@ async def verify_otp(data: OTPVerify, svc: UserService = Depends(get_service)):
     return await svc.verify_otp(data.email, data.code)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 async def login(data: LoginRequest, svc: UserService = Depends(get_service)):
     """Authenticate and receive an access + refresh token pair."""
     return await svc.login(data)

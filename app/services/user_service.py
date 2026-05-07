@@ -19,7 +19,7 @@ from app.models.language import Language
 from app.repositories.user_repository import UserRepository
 from app.repositories.user_language_repository import UserLanguageRepository
 from app.repositories.language_repository import LanguageRepository
-from app.schemas.user import UserCreate, UserUpdate, LoginRequest, TokenResponse
+from app.schemas.user import UserCreate, UserUpdate, LoginRequest, TokenResponse,LoginResponse,UserDataResponse
 from app.services.email_service import email_service
 
 
@@ -166,7 +166,20 @@ class UserService(BaseUserService):
         await self.repo.create_refresh_token(rt)
         await self.db.commit()
 
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+        return LoginResponse(
+            message="Login successful",
+            user=UserDataResponse(
+                user_id=user.id,
+                email=user.email,
+                username=user.username,
+                role=user.role,
+            ),
+            tokens=TokenResponse(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                token_type="bearer",
+            ),
+        )
 
     async def refresh(self, token: str) -> TokenResponse:
         from jose import JWTError

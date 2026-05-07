@@ -16,7 +16,7 @@ class TribeUpdate(BaseModel):
     country_code: Optional[str] = None
 
 
-class TribeResponse(BaseModel):
+class TribeData(BaseModel):
     id: uuid.UUID
     name: str
     country: str
@@ -24,3 +24,7 @@ class TribeResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class TribeResponse(BaseModel):
+    message:str
+    data:TribeData

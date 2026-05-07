@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tribe import Tribe
 from app.repositories.tribe_repository import TribeRepository
-from app.schemas.tribe import TribeCreate, TribeUpdate
+from app.schemas.tribe import TribeCreate, TribeUpdate, TribeResponse
 
 
 class BaseTribeService(ABC):
@@ -35,7 +35,11 @@ class TribeService(BaseTribeService):
         self.repo = TribeRepository(db)
 
     async def create(self, data: TribeCreate) -> Tribe:
-        return await self.repo.create(data.model_dump())
+        if await self.repo.get_by_name(data.name):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"A tribe named '{data.name}' already exists.")
+        tribe = await self.repo.create(data.model_dump())
+        return TribeResponse(message="Tribe created successfully", data=tribe)
+
 
     async def get(self, tribe_id: uuid.UUID) -> Tribe:
         tribe = await self.repo.get_by_id(tribe_id)

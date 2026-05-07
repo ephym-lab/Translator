@@ -17,6 +17,9 @@ class BaseSubTribeRepository(ABC):
     async def get_by_id(self, subtribe_id: uuid.UUID) -> Optional[SubTribe]: ...
 
     @abstractmethod
+    async def get_by_name_and_tribe(self, name: str, tribe_id: uuid.UUID) -> Optional[SubTribe]: ...
+
+    @abstractmethod
     async def get_all(
         self, limit: int, offset: int, tribe_id: Optional[uuid.UUID] = None
     ) -> tuple[list[SubTribe], int]: ...
@@ -40,6 +43,15 @@ class SubTribeRepository(BaseSubTribeRepository):
     async def get_by_id(self, subtribe_id: uuid.UUID) -> Optional[SubTribe]:
         try:
             result = await self.db.execute(select(SubTribe).where(SubTribe.id == subtribe_id))
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Database error: failed to fetch subtribe") from e
+
+    async def get_by_name_and_tribe(self, name: str, tribe_id: uuid.UUID) -> Optional[SubTribe]:
+        try:
+            result = await self.db.execute(
+                select(SubTribe).where(SubTribe.name == name, SubTribe.tribe_id == tribe_id)
+            )
             return result.scalar_one_or_none()
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to fetch subtribe") from e

@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 from app.api.deps import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User

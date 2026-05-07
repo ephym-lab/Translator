@@ -1,6 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 
+from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +14,9 @@ class BaseTribeRepository(ABC):
 
     @abstractmethod
     async def get_by_id(self, tribe_id: uuid.UUID) -> Tribe | None: ...
+
+    @abstractmethod
+    async def get_by_name(self, name: str) -> Tribe | None: ...
 
     @abstractmethod
     async def get_all(self, limit: int, offset: int) -> tuple[list[Tribe], int]: ...
@@ -36,6 +40,13 @@ class TribeRepository(BaseTribeRepository):
     async def get_by_id(self, tribe_id: uuid.UUID) -> Tribe | None:
         try:
             result = await self.db.execute(select(Tribe).where(Tribe.id == tribe_id))
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Database error: failed to fetch tribe") from e
+
+    async def get_by_name(self, name: str) -> Tribe | None:
+        try:
+            result = await self.db.execute(select(Tribe).where(Tribe.name == name))
             return result.scalar_one_or_none()
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to fetch tribe") from e

@@ -36,6 +36,8 @@ class LanguageService(BaseLanguageService):
         self.repo = LanguageRepository(db)
 
     async def create(self, data: LanguageCreate) -> Language:
+        if await self.repo.get_by_name(data.name):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"A language named '{data.name}' already exists.")
         if await self.repo.get_by_code(data.code):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Language code '{data.code}' already exists.")
         return await self.repo.create(data.model_dump())

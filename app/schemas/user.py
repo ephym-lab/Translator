@@ -50,12 +50,21 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class UserDataResponse(BaseModel):
+    user_id: uuid.UUID
+    email: EmailStr
+    username: str
+    role: RoleEnum
 
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
+class LoginResponse(BaseModel):
+    message: str = "Login successful"
+    user: UserDataResponse
+    tokens: TokenResponse
 
 class RefreshRequest(BaseModel):
     refresh_token: str
