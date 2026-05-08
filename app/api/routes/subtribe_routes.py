@@ -37,14 +37,24 @@ async def list_subtribes(
     tribe_id: Optional[uuid.UUID] = None,
     svc: SubTribeService = Depends(get_service),
 ):
-    """List subtribes. Optional filter by tribe_id (for cascading dropdowns). Public."""
-    items, total = await svc.list(limit, offset, tribe_id=tribe_id)
+    """List subtribes. Optional filter by tribe_id. Public."""
+    items, total = await svc.list_all(limit, offset, tribe_id=tribe_id)
     return APIResponse(
         success=True,
         message="SubTribes retrieved successfully.",
         data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
-        status=status.HTTP_200_OK
+        status=status.HTTP_200_OK,
     )
+
+
+@router.get("/by-tribe/{tribe_id}", response_model=APIResponse[list[SubTribeData]])
+async def get_subtribes_by_tribe_id(
+    tribe_id: uuid.UUID,
+    svc: SubTribeService = Depends(get_service),
+):
+    """Get all subtribes belonging to a tribe. Public."""
+    result = await svc.get_by_tribe_id(tribe_id)
+    return APIResponse(success=True, message="SubTribes retrieved successfully.", data=result, status=status.HTTP_200_OK)
 
 
 @router.get("/{subtribe_id}", response_model=APIResponse[SubTribeData])
@@ -65,7 +75,7 @@ async def update_subtribe(
     return APIResponse(success=True, message="SubTribe updated successfully.", data=result, status=status.HTTP_200_OK)
 
 
-@router.delete("/{subtribe_id}", response_model=APIResponse[None], response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+@router.delete("/{subtribe_id}", response_model=APIResponse[None], response_model_exclude_none=True)
 async def delete_subtribe(
     subtribe_id: uuid.UUID,
     svc: SubTribeService = Depends(get_service),

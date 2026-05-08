@@ -98,3 +98,13 @@ class SubTribeRepository(BaseSubTribeRepository):
         except Exception as e:
             await self.db.rollback()
             raise HTTPException(status_code=500, detail="Database error: failed to delete subtribe") from e
+
+    #get subtribes in a tribe
+    async def get_by_tribe_id(self, tribe_id: uuid.UUID) -> list[SubTribe]:
+        try:
+            result = await self.db.execute(
+                select(SubTribe).where(SubTribe.tribe_id == tribe_id)
+            )
+            return list(result.scalars().all())
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Database error: failed to fetch subtribes") from e
