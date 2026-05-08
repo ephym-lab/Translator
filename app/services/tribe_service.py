@@ -38,23 +38,21 @@ class TribeService(BaseTribeService):
         if await self.repo.get_by_name(data.name):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"A tribe named '{data.name}' already exists.")
         tribe = await self.repo.create(data.model_dump())
-        return TribeResponse(message="Tribe created successfully", data=tribe)
+        return tribe
 
 
     async def get(self, tribe_id: uuid.UUID) -> Tribe:
         tribe = await self.repo.get_by_id(tribe_id)
         if not tribe:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Tribe not found.")
-        return {
-            "message": "Tribe retrieved successfully.",
-            "data": tribe
-        }
+        return tribe
 
     async def list(self, limit: int = 20, offset: int = 0) -> tuple[list[Tribe], int]:
         return await self.repo.get_all(limit, offset)
 
     async def update(self, tribe_id: uuid.UUID, data: TribeUpdate) -> Tribe:
         tribe = await self.get(tribe_id)
+        print(f"data items == {data.model_dump(exclude_unset=True)}")
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(tribe, field, value)
         return await self.repo.save(tribe)

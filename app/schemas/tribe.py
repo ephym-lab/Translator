@@ -26,5 +26,4 @@ class TribeData(BaseModel):
     model_config = {"from_attributes": True}
 
 class TribeResponse(BaseModel):
-    message:str
     data:TribeData

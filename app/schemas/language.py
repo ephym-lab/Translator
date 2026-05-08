@@ -27,7 +27,6 @@ class LanguageData(BaseModel):
     model_config = {"from_attributes": True}
 
 class LanguageResponse(BaseModel):
-    message: str
     data: LanguageData
 
 

@@ -62,7 +62,6 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 class LoginResponse(BaseModel):
-    message: str = "Login successful"
     user: UserDataResponse
     tokens: TokenResponse
 

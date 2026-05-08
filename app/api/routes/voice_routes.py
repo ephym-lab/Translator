@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 
 from app.core.config import settings
 from app.schemas.voice import PipelineResult, SynthesizeRequest, TranscriptionResult
+from app.schemas.api_response import APIResponse
 from app.services.AudioInputService import MicrophoneInputService, BaseAudioInputService
 from app.services.FunctionService import VoiceFunctionService
 from app.services.IntentService import RuleBasedIntentService
@@ -47,14 +48,14 @@ def get_pipeline() -> VoiceAssistantPipeline:
 
 @router.post(
     "/transcribe",
-    response_model=TranscriptionResult,
+    response_model=APIResponse[TranscriptionResult],
     summary="Transcribe audio to text",
     description="Upload an audio file and receive its transcribed text via Whisper.",
 )
 async def transcribe_audio(
     file: UploadFile = File(..., description="Audio file (WAV, MP3, M4A, OGG, FLAC)"),
     stt: WhisperSTTService = Depends(get_stt),
-) -> TranscriptionResult:
+):
     """
     Transcribe an uploaded audio file to plain text.
 
@@ -81,14 +82,15 @@ async def transcribe_audio(
 
     try:
         text = stt.transcribe(tmp_path)
-        return TranscriptionResult(text=text)
+        result = TranscriptionResult(text=text)
+        return APIResponse(success=True, message="Audio transcribed successfully.", data=result, status=200)
     finally:
         os.remove(tmp_path)
 
 
 @router.post(
     "/process",
-    response_model=PipelineResult,
+    response_model=APIResponse[PipelineResult],
     summary="Run full voice pipeline",
     description=(
         "Upload an audio file and run it through the full pipeline: "
@@ -98,7 +100,7 @@ async def transcribe_audio(
 )
 async def process_audio(
     file: UploadFile = File(..., description="Audio file (WAV, MP3, M4A, OGG, FLAC)"),
-) -> PipelineResult:
+):
     """
     Run an uploaded audio file through the complete voice assistant pipeline.
 
@@ -139,7 +141,7 @@ async def process_audio(
         # Don't play audio over the server's speakers — override speak()
         pipeline.tts.speak = lambda text: None  # type: ignore[method-assign]
         result = await pipeline.run_once()
-        return result
+        return APIResponse(success=True, message="Audio processed successfully.", data=result, status=200)
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

@@ -8,6 +8,7 @@ from app.models.user import User
 from app.repositories.generator_repository import GeneratorRepository
 from app.schemas.ai import GenerateDatasetRequest
 from app.schemas.dataset import DatasetResponse
+from app.schemas.api_response import APIResponse
 
 router = APIRouter(prefix="/ai", tags=["AI Generation"])
 
@@ -15,7 +16,7 @@ def get_generator_repo(db: AsyncSession = Depends(get_db)) -> GeneratorRepositor
     return GeneratorRepository(db)
 
 
-@router.post("/generate-dataset", response_model=DatasetResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/generate-dataset", response_model=APIResponse[DatasetResponse], status_code=status.HTTP_201_CREATED)
 async def generate_dataset(
     data: GenerateDatasetRequest,
     repo: GeneratorRepository = Depends(get_generator_repo),
@@ -57,4 +58,4 @@ async def generate_dataset(
     )
     full_dataset = result.scalar_one_or_none()
     
-    return full_dataset
+    return APIResponse(success=True, message="Dataset generated successfully.", data=full_dataset, status=status.HTTP_201_CREATED)

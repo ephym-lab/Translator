@@ -1,6 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 from sqlalchemy import select, func, or_
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from app.models.user import User
@@ -60,7 +61,11 @@ class UserRepository(BaseUserRepository):
 
     async def get_by_id(self, user_id: uuid.UUID) -> User | None:
         try:
-            result = await self.db.execute(select(User).where(User.id == user_id))
+            result = await self.db.execute(
+                select(User)
+                .options(selectinload(User.languages))
+                .where(User.id == user_id)
+            )
             return result.scalar_one_or_none()
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to fetch user") from e
@@ -84,7 +89,12 @@ class UserRepository(BaseUserRepository):
     async def get_all(self, limit: int, offset: int) -> tuple[list[User], int]:
         try:
             total = (await self.db.execute(select(func.count(User.id)))).scalar()
-            result = await self.db.execute(select(User).limit(limit).offset(offset))
+            result = await self.db.execute(
+                select(User)
+                .options(selectinload(User.languages))
+                .limit(limit)
+                .offset(offset)
+            )
             return list(result.scalars().all()), total
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to list users") from e
