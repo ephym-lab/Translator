@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     #ai
     GROK_API_KEY: str = ""
     AI_PROVIDER: str = ""
+    
+    #hugging face
+    HF_TOKEN: str = ""
 
     class Config:
         env_file = ".env"
