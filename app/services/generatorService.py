@@ -92,7 +92,7 @@ from app.core.config import settings
 class AIServiceFactory:
     @staticmethod
     def get_service():
-        provider = os.getenv("AI_PROVIDER", "grok").lower()
+        provider = os.getenv("AI_PROVIDER", "openai").lower()
         
         if provider == "openai":
             api_key = os.getenv("OPENAI_API_KEY") or getattr(settings, "OPENAI_API_KEY", None)
