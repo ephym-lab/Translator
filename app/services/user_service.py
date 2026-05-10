@@ -14,7 +14,7 @@ from app.core.security import (
 )
 from app.models.otp import OTP
 from app.models.refresh_token import RefreshToken
-from app.models.user import User
+from app.models.user import User,RoleEnum
 from app.models.language import Language
 from app.repositories.user_repository import UserRepository
 from app.repositories.user_language_repository import UserLanguageRepository
@@ -82,6 +82,9 @@ class UserService(BaseUserService):
         found = await self.lang_repo.get_by_ids(data.languages)
         if len(found) != len(data.languages):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "One or more language IDs are invalid.")
+        #by default user is a user
+        if not data.role:
+            data.role = RoleEnum.user
 
         user = User(
             id=uuid.uuid4(),
@@ -96,6 +99,7 @@ class UserService(BaseUserService):
         )
 
         otp_code = generate_otp()
+        print("this is the otp code",otp_code)
         otp = OTP(
             id=uuid.uuid4(),
             email=data.email,

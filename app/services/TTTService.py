@@ -23,8 +23,30 @@ class NLLBTTTService(BaseTTTService):
         "kikuyu":  "kik_Latn",
         "maasai":  "mas_Latn",
         "somali":  "som_Latn",
-    }
+        "kalenjin":"kal_Latn",
+        "meru":    "mer_Latn",
+        "kamba":   "kam_Latn",
+        "german":  "deu_Latn",
+        "chinese": "zho_Hans",
+        "french":  "fra_Latn",
+        "russian": "rus_Cyrl",
+        "spanish": "spa_Latn",
+        "italian": "ita_Latn",
+        "portuguese": "por_Latn",
+        "japanese": "jpn_Jpan",
+        "korean": "kor_Hang",
+        "arabic": "ara_Arab",
+        "hindi": "hin_Deva",
+        "bengali": "ben_Beng",
+        "punjabi": "pan_Guru",
+        "urdu": "urd_Arab",
+        "telugu": "tel_Telu",
+        "marathi": "mar_Deva",
+        "tamil": "tam_Taml",
+        "dholuo":   "luo_Latn"
 
+    }
+    
     def __init__(self, model_name: str = "facebook/nllb-200-distilled-600M"):
         self.model_name = model_name
         self._model = None

@@ -14,10 +14,11 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     gender: GenderEnum
-    role: RoleEnum = RoleEnum.user
+    #make role optional 
+    role: Optional[RoleEnum] = RoleEnum.user
     phone: Optional[str] = None
     avatar: Optional[str] = None
-    languages: List[uuid.UUID]  # at least one language required
+    languages: List[uuid.UUID] = [] 
 
 
 
