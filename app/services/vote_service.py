@@ -24,7 +24,7 @@ class BaseVoteService(ABC):
 
     @abstractmethod
     async def list_for_response(
-        self, response_id: uuid.UUID, limit: int, offset: int
+        self, response_id: uuid.UUID, limit: int, offset: int, vote_type: VoteEnum | None = None
     ) -> tuple[list[ResponseVote], int]: ...
 
 
@@ -82,6 +82,6 @@ class VoteService(BaseVoteService):
             await self.dataset_service.recalculate_percentage(response.dataset_id)
 
     async def list_for_response(
-        self, response_id: uuid.UUID, limit: int = 20, offset: int = 0
+        self, response_id: uuid.UUID, limit: int = 20, offset: int = 0, vote_type: VoteEnum | None = None
     ) -> tuple[list[ResponseVote], int]:
-        return await self.repo.get_all_for_response(response_id, limit, offset)
+        return await self.repo.get_all_for_response(response_id, limit, offset, vote_type)

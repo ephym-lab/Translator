@@ -1,4 +1,5 @@
 import uuid
+from typing import List, Tuple
 from abc import ABC, abstractmethod
 
 from fastapi import HTTPException, status
@@ -23,7 +24,10 @@ class BaseDatasetService(ABC):
     async def get(self, dataset_id: uuid.UUID) -> UncleanDataset: ...
 
     @abstractmethod
-    async def list(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]: ...
+    async def list(self, limit: int, offset: int) -> Tuple[List[UncleanDataset], int]: ...
+
+    @abstractmethod
+    async def list_with_ai_responses(self, limit: int, offset: int) -> Tuple[List[UncleanDataset], int]: ...
 
     @abstractmethod
     async def update(self, dataset_id: uuid.UUID, data: DatasetUpdate) -> UncleanDataset: ...
@@ -70,8 +74,11 @@ class DatasetService(BaseDatasetService):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Dataset not found.")
         return ds
 
-    async def list(self, limit: int = 20, offset: int = 0) -> tuple[list[UncleanDataset], int]:
+    async def list(self, limit: int = 20, offset: int = 0) -> Tuple[List[UncleanDataset], int]:
         return await self.repo.get_all(limit, offset)
+
+    async def list_with_ai_responses(self, limit: int = 20, offset: int = 0) -> Tuple[List[UncleanDataset], int]:
+        return await self.repo.get_datasets_with_ai_responses(limit, offset)
 
     async def update(self, dataset_id: uuid.UUID, data: DatasetUpdate) -> UncleanDataset:
         ds = await self.get(dataset_id)

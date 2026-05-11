@@ -7,6 +7,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.response import Response
+from app.models.response_vote import ResponseVote, VoteEnum
 
 
 class BaseResponseRepository(ABC):
@@ -26,10 +27,13 @@ class BaseResponseRepository(ABC):
         self, dataset_id: uuid.UUID, limit: int, offset: int,
         language_id: Optional[uuid.UUID] = None,
         is_ai_generated: Optional[bool] = None,
+        vote_type: Optional[VoteEnum] = None,
     ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
-    async def get_all(self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None) -> tuple[list[Response], int]: ...
+    async def get_all(
+        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None, vote_type: Optional[VoteEnum] = None
+    ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
     async def create(self, response: Response) -> Response: ...
@@ -75,34 +79,51 @@ class ResponseRepository(BaseResponseRepository):
         self, dataset_id: uuid.UUID, limit: int, offset: int,
         language_id: Optional[uuid.UUID] = None,
         is_ai_generated: Optional[bool] = None,
+        vote_type: Optional[VoteEnum] = None,
     ) -> tuple[list[Response], int]:
         try:
+            query = select(Response)
+            count_q = select(func.count(func.distinct(Response.id)))
+            
+            if vote_type:
+                query = query.join(Response.votes).where(ResponseVote.vote == vote_type)
+                count_q = count_q.join(Response.votes).where(ResponseVote.vote == vote_type)
+
             filters = [Response.dataset_id == dataset_id]
             if language_id:
                 filters.append(Response.language_id == language_id)
             if is_ai_generated is not None:
                 filters.append(Response.is_ai_generated == is_ai_generated)
-            total = (await self.db.execute(select(func.count(Response.id)).where(and_(*filters)))).scalar()
-            result = await self.db.execute(
-                select(Response).where(and_(*filters)).limit(limit).offset(offset)
-            )
+                
+            query = query.where(and_(*filters)).distinct()
+            count_q = count_q.where(and_(*filters))
+            
+            total = (await self.db.execute(count_q)).scalar() or 0
+            result = await self.db.execute(query.limit(limit).offset(offset))
             return list(result.scalars().all()), total
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to list responses") from e
 
     async def get_all(
-        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None
+        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None, vote_type: Optional[VoteEnum] = None
     ) -> tuple[list[Response], int]:
         try:
             query = select(Response)
-            count_q = select(func.count(Response.id))
+            count_q = select(func.count(func.distinct(Response.id)))
+            
+            if vote_type:
+                query = query.join(Response.votes).where(ResponseVote.vote == vote_type)
+                count_q = count_q.join(Response.votes).where(ResponseVote.vote == vote_type)
+                
             if language_id:
                 query = query.where(Response.language_id == language_id)
                 count_q = count_q.where(Response.language_id == language_id)
             if is_ai_generated is not None:
                 query = query.where(Response.is_ai_generated == is_ai_generated)
                 count_q = count_q.where(Response.is_ai_generated == is_ai_generated)
-            total = (await self.db.execute(count_q)).scalar()
+                
+            query = query.distinct()
+            total = (await self.db.execute(count_q)).scalar() or 0
             result = await self.db.execute(query.limit(limit).offset(offset))
             return list(result.scalars().all()), total
         except Exception as e:

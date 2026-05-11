@@ -21,6 +21,9 @@ class BaseDatasetRepository(ABC):
     async def get_all(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]: ...
 
     @abstractmethod
+    async def get_datasets_with_ai_responses(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]: ...
+
+    @abstractmethod
     async def create(self, data: dict, category_ids: list[uuid.UUID]) -> UncleanDataset: ...
 
     @abstractmethod
@@ -73,6 +76,28 @@ class DatasetRepository(BaseDatasetRepository):
             return list(result.scalars().all()), total
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to list datasets") from e
+
+    async def get_datasets_with_ai_responses(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]:
+        try:
+            query = (
+                select(UncleanDataset)
+                .join(UncleanDataset.responses)
+                .where(Response.is_ai_generated == True)
+                .options(
+                    selectinload(UncleanDataset.allowed_categories),
+                    selectinload(UncleanDataset.responses).selectinload(Response.language),
+                    selectinload(UncleanDataset.responses).selectinload(Response.votes),
+                )
+                .distinct()
+            )
+            count_query = select(func.count(func.distinct(UncleanDataset.id))).join(UncleanDataset.responses).where(Response.is_ai_generated == True)
+            
+            total = (await self.db.execute(count_query)).scalar() or 0
+            result = await self.db.execute(query.limit(limit).offset(offset))
+            
+            return list(result.scalars().all()), total
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Database error: failed to list datasets with ai responses") from e
 
     async def create(self, data: dict, category_ids: list[uuid.UUID]) -> UncleanDataset:
         try:

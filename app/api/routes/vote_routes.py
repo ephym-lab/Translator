@@ -9,6 +9,7 @@ from app.schemas.vote import VoteCreate, VoteResponse
 from app.schemas.pagination import PaginatedData
 from app.schemas.api_response import APIResponse
 from app.services.vote_service import VoteService
+from app.models.response_vote import VoteEnum
 
 router = APIRouter(prefix="/votes", tags=["Votes"])
 
@@ -31,18 +32,4 @@ async def cast_vote(
     return APIResponse(success=True, message="Vote cast successfully.", data=result, status=status.HTTP_201_CREATED)
 
 
-@router.get("/response/{response_id}", response_model=APIResponse[PaginatedData[VoteResponse]])
-async def list_votes(
-    response_id: uuid.UUID,
-    limit: int = 20,
-    offset: int = 0,
-    svc: VoteService = Depends(get_service),
-):
-    """List all votes for a specific response (paginated)."""
-    items, total = await svc.list_for_response(response_id, limit, offset)
-    return APIResponse(
-        success=True,
-        message="Votes retrieved successfully.",
-        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
-        status=status.HTTP_200_OK
-    )
+

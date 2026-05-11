@@ -11,6 +11,7 @@ from app.schemas.response import ResponseCreate, ResponseSchema, ResponseUpdate
 from app.schemas.pagination import PaginatedData
 from app.schemas.api_response import APIResponse
 from app.services.response_service import ResponseService
+from app.models.response_vote import VoteEnum
 
 router = APIRouter(prefix="/responses", tags=["Responses"])
 
@@ -51,10 +52,11 @@ async def list_all_responses(
     offset: int = 0,
     language_id: Optional[uuid.UUID] = None,
     is_ai_generated: Optional[bool] = None,
+    vote_type: Optional[VoteEnum] = None,
     svc: ResponseService = Depends(get_service),
 ):
-    """List all responses. Optionally filter by language_id."""
-    items, total = await svc.list_all(limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
+    """List all responses. Optionally filter by language_id, is_ai_generated, and vote_type."""
+    items, total = await svc.list_all(limit, offset, language_id=language_id, is_ai_generated=is_ai_generated, vote_type=vote_type)
     return APIResponse(
         success=True,
         message="Responses retrieved successfully.",
@@ -70,11 +72,12 @@ async def list_responses_for_dataset(
     offset: int = 0,
     language_id: Optional[uuid.UUID] = None,
     is_ai_generated: Optional[bool] = None,
+    vote_type: Optional[VoteEnum] = None,
     svc: ResponseService = Depends(get_service),
 ):
     """List responses for a specific dataset. Optionally filter by language_id
-    to see e.g. all Kikuyu translations of a specific text."""
-    items, total = await svc.list_by_dataset(dataset_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
+    to see e.g. all Kikuyu translations of a specific text. You can also filter by vote_type."""
+    items, total = await svc.list_by_dataset(dataset_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated, vote_type=vote_type)
     return APIResponse(
         success=True,
         message="Responses for dataset retrieved successfully.",

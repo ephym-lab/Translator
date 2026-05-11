@@ -12,6 +12,7 @@ from app.repositories.dataset_repository import DatasetRepository
 from app.repositories.user_dataset_session_repository import UserDatasetSessionRepository
 from app.repositories.user_language_repository import UserLanguageRepository
 from app.schemas.response import ResponseCreate, ResponseUpdate
+from app.models.response_vote import VoteEnum
 
 
 class BaseResponseService(ABC):
@@ -29,11 +30,12 @@ class BaseResponseService(ABC):
         self, dataset_id: uuid.UUID, limit: int, offset: int,
         language_id: Optional[uuid.UUID] = None,
         is_ai_generated: Optional[bool] = None,
+        vote_type: Optional[VoteEnum] = None,
     ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
     async def list_all(
-        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None
+        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None, vote_type: Optional[VoteEnum] = None
     ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
@@ -126,13 +128,14 @@ class ResponseService(BaseResponseService):
         self, dataset_id: uuid.UUID, limit: int = 20, offset: int = 0,
         language_id: Optional[uuid.UUID] = None,
         is_ai_generated: Optional[bool] = None,
+        vote_type: Optional[VoteEnum] = None,
     ) -> tuple[list[Response], int]:
-        return await self.repo.get_all_for_dataset(dataset_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
+        return await self.repo.get_all_for_dataset(dataset_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated, vote_type=vote_type)
 
     async def list_all(
-        self, limit: int = 20, offset: int = 0, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None
+        self, limit: int = 20, offset: int = 0, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None, vote_type: Optional[VoteEnum] = None
     ) -> tuple[list[Response], int]:
-        return await self.repo.get_all(limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
+        return await self.repo.get_all(limit, offset, language_id=language_id, is_ai_generated=is_ai_generated, vote_type=vote_type)
 
     async def update(self, response_id: uuid.UUID, user_id: uuid.UUID, data: ResponseUpdate) -> Response:
         resp = await self.get(response_id)

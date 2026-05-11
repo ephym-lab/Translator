@@ -39,6 +39,18 @@ async def list_datasets(limit: int = 20, offset: int = 0, svc: DatasetService = 
     )
 
 
+@router.get("/ai-generated", response_model=APIResponse[PaginatedData[DatasetResponse]])
+async def list_ai_generated_datasets(limit: int = 20, offset: int = 0, svc: DatasetService = Depends(get_service)):
+    """Get datasets that contain AI-generated responses (for users to vote on or reply to)."""
+    items, total = await svc.list_with_ai_responses(limit, offset)
+    return APIResponse(
+        success=True,
+        message="AI-generated datasets retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+        status=status.HTTP_200_OK
+    )
+
+
 @router.get("/{dataset_id}", response_model=APIResponse[DatasetResponse])
 async def get_dataset(dataset_id: uuid.UUID, svc: DatasetService = Depends(get_service)):
     result = await svc.get(dataset_id)
