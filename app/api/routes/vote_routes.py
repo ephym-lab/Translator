@@ -31,5 +31,11 @@ async def cast_vote(
     result = await svc.cast_vote(current_user.id, data)
     return APIResponse(success=True, message="Vote cast successfully.", data=result, status=status.HTTP_201_CREATED)
 
-
-
+@router.get("/response/{response_id}/count", response_model=APIResponse[dict])
+async def get_votes_count(
+    response_id: uuid.UUID,
+    svc: VoteService = Depends(get_service),
+):
+    """Get the total, accepted, and rejected votes count for a specific response."""
+    result = await svc.get_votes_count(response_id)
+    return APIResponse(success=True, message="Votes count retrieved successfully.", data=result, status=status.HTTP_200_OK)

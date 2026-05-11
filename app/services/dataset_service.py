@@ -30,6 +30,9 @@ class BaseDatasetService(ABC):
     async def list_with_ai_responses(self, limit: int, offset: int) -> Tuple[List[UncleanDataset], int]: ...
 
     @abstractmethod
+    async def get_responses_count(self, dataset_id: uuid.UUID) -> dict: ...
+
+    @abstractmethod
     async def update(self, dataset_id: uuid.UUID, data: DatasetUpdate) -> UncleanDataset: ...
 
     @abstractmethod
@@ -79,6 +82,14 @@ class DatasetService(BaseDatasetService):
 
     async def list_with_ai_responses(self, limit: int = 20, offset: int = 0) -> Tuple[List[UncleanDataset], int]:
         return await self.repo.get_datasets_with_ai_responses(limit, offset)
+
+    async def get_responses_count(self, dataset_id: uuid.UUID) -> dict:
+        total = await self.repo.count_responses(dataset_id)
+        accepted = await self.repo.count_accepted_responses(dataset_id)
+        return {
+            "total": total,
+            "accepted": accepted
+        }
 
     async def update(self, dataset_id: uuid.UUID, data: DatasetUpdate) -> UncleanDataset:
         ds = await self.get(dataset_id)

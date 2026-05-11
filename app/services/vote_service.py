@@ -27,6 +27,9 @@ class BaseVoteService(ABC):
         self, response_id: uuid.UUID, limit: int, offset: int, vote_type: VoteEnum | None = None
     ) -> tuple[list[ResponseVote], int]: ...
 
+    @abstractmethod
+    async def get_votes_count(self, response_id: uuid.UUID) -> dict: ...
+
 
 class VoteService(BaseVoteService):
     """
@@ -85,3 +88,13 @@ class VoteService(BaseVoteService):
         self, response_id: uuid.UUID, limit: int = 20, offset: int = 0, vote_type: VoteEnum | None = None
     ) -> tuple[list[ResponseVote], int]:
         return await self.repo.get_all_for_response(response_id, limit, offset, vote_type)
+
+    async def get_votes_count(self, response_id: uuid.UUID) -> dict:
+        total = await self.repo.count_all_for_response(response_id)
+        accepted = await self.repo.count_accepted_for_response(response_id)
+        rejected = total - accepted
+        return {
+            "total": total,
+            "accepted": accepted,
+            "rejected": rejected
+        }

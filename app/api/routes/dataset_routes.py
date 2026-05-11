@@ -57,6 +57,13 @@ async def get_dataset(dataset_id: uuid.UUID, svc: DatasetService = Depends(get_s
     return APIResponse(success=True, message="Dataset retrieved successfully.", data=result, status=status.HTTP_200_OK)
 
 
+@router.get("/{dataset_id}/responses/count", response_model=APIResponse[dict])
+async def get_responses_count(dataset_id: uuid.UUID, svc: DatasetService = Depends(get_service)):
+    """Get the total and accepted responses count for a specific dataset."""
+    result = await svc.get_responses_count(dataset_id)
+    return APIResponse(success=True, message="Responses count retrieved successfully.", data=result, status=status.HTTP_200_OK)
+
+
 @router.patch("/{dataset_id}", response_model=APIResponse[DatasetResponse])
 async def update_dataset(
     dataset_id: uuid.UUID,
