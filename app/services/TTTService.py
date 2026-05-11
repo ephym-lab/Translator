@@ -43,7 +43,9 @@ class NLLBTTTService(BaseTTTService):
         "telugu": "tel_Telu",
         "marathi": "mar_Deva",
         "tamil": "tam_Taml",
-        "dholuo":   "luo_Latn"
+        "dholuo":   "luo_Latn",
+        "austrian": "aut_Latn",
+        "austria": "deu_Latn"
 
     }
     
