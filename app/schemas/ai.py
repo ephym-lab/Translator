@@ -10,3 +10,5 @@ class GenerateDatasetRequest(BaseModel):
     language_id: uuid.UUID
     category_ids: List[uuid.UUID] = []
     level: DatasetLevelEnum = DatasetLevelEnum.level_1
+    target_languages: Optional[List[uuid.UUID]] = None
+    generation_count: int = 20

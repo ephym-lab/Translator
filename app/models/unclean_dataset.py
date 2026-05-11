@@ -20,7 +20,7 @@ class UncleanDataset(TimestampMixin, Base):
     __tablename__ = "unclean_datasets"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    original_text = Column(Text, nullable=False)
+    original_text = Column(Text, nullable=False, unique=True)
     level = Column(SAEnum(DatasetLevelEnum, name="dataset_level_enum"), nullable=False)
     response_percentage = Column(Float, default=0.0, nullable=False)
     is_clean = Column(Boolean, default=False, nullable=False)

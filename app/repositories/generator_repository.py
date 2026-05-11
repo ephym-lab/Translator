@@ -4,6 +4,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from app.services.generatorService import AIServiceFactory
 from app.models.unclean_dataset import UncleanDataset, DatasetLevelEnum
@@ -35,6 +36,7 @@ class BaseGeneratorRepository(ABC):
         language_id: uuid.UUID,
         category_ids: list[uuid.UUID],
         level: DatasetLevelEnum = DatasetLevelEnum.level_1,
+        target_languages: list[uuid.UUID] | None = None,
     ) -> UncleanDataset:
         pass
 
@@ -82,6 +84,7 @@ class GeneratorRepository(BaseGeneratorRepository):
         language_id: uuid.UUID,
         category_ids: list[uuid.UUID],
         level: DatasetLevelEnum = DatasetLevelEnum.level_1,
+        target_languages: list[uuid.UUID] | None = None,
     ) -> UncleanDataset:
         try:
             if not category_ids:
@@ -115,7 +118,8 @@ class GeneratorRepository(BaseGeneratorRepository):
                     generate_ai_responses_for_dataset(
                         dataset_id=dataset.id,
                         original_text=dataset.original_text,
-                        category_ids=all_category_ids
+                        category_ids=all_category_ids,
+                        target_languages=target_languages
                     )
                 )
                 
@@ -137,7 +141,8 @@ class GeneratorRepository(BaseGeneratorRepository):
                     generate_ai_responses_for_dataset(
                         dataset_id=dataset.id,
                         original_text=dataset.original_text,
-                        category_ids=category_ids
+                        category_ids=category_ids,
+                        target_languages=target_languages
                     )
                 )
                 
@@ -147,6 +152,12 @@ class GeneratorRepository(BaseGeneratorRepository):
             # Let already-typed HTTP errors propagate without wrapping them
             await self.db.rollback()
             raise
+        except IntegrityError:
+            await self.db.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail="A dataset with this exact original text already exists."
+            )
         except Exception as e:
             await self.db.rollback()
             raise HTTPException(

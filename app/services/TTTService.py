@@ -17,36 +17,38 @@ class BaseTTTService(ABC):
 class NLLBTTTService(BaseTTTService):
     """Offline translation service using Facebook NLLB-200."""
 
-    LANGUAGE_CODES = {
-        "english": "eng_Latn",
-        "swahili": "swh_Latn",
-        "kikuyu":  "kik_Latn",
-        "maasai":  "mas_Latn",
-        "somali":  "som_Latn",
-        "kalenjin":"kal_Latn",
-        "meru":    "mer_Latn",
-        "kamba":   "kam_Latn",
-        "german":  "deu_Latn",
-        "chinese": "zho_Hans",
-        "french":  "fra_Latn",
-        "russian": "rus_Cyrl",
-        "spanish": "spa_Latn",
-        "italian": "ita_Latn",
-        "portuguese": "por_Latn",
-        "japanese": "jpn_Jpan",
-        "korean": "kor_Hang",
-        "arabic": "ara_Arab",
-        "hindi": "hin_Deva",
-        "bengali": "ben_Beng",
-        "punjabi": "pan_Guru",
-        "urdu": "urd_Arab",
-        "telugu": "tel_Telu",
-        "marathi": "mar_Deva",
-        "tamil": "tam_Taml",
+    LANGUAGE_CODES ={
+        # East African languages
+        "english":  "eng_Latn",
+        "swahili":  "swh_Latn",
+        "kikuyu":   "kik_Latn",
+        "maasai":   "mas_Latn",
+        "somali":   "som_Latn",
+        "kamba":    "kam_Latn",
         "dholuo":   "luo_Latn",
-        "austrian": "aut_Latn",
-        "austria": "deu_Latn"
 
+        # European languages
+        "german":      "deu_Latn",
+        "french":      "fra_Latn",
+        "russian":     "rus_Cyrl",
+        "spanish":     "spa_Latn",
+        "italian":     "ita_Latn",
+        "portuguese":  "por_Latn",
+
+        # Asian languages
+        "japanese": "jpn_Jpan",
+        "korean":   "kor_Hang",
+        "arabic":   "arb_Arab",   
+        "bengali":  "ben_Beng",
+        "punjabi":  "pan_Guru",
+        "urdu":     "urd_Arab",
+        "telugu":   "tel_Telu",
+        "marathi":  "mar_Deva",
+        "tamil":    "tam_Taml",
+
+        # Chinese
+        "chinese":              "zho_Hans",  # Simplified
+        "chinese_traditional":  "zho_Hant",  # worth adding
     }
     
     def __init__(self, model_name: str = "facebook/nllb-200-distilled-600M"):

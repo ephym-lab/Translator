@@ -23,7 +23,7 @@ def get_language_repo(db: AsyncSession = Depends(get_db)) -> LanguageRepository:
 
 @router.post(
     "/generate-dataset",
-    response_model=APIResponse[DatasetResponse],
+    response_model=APIResponse[list[DatasetResponse]],
     status_code=status.HTTP_201_CREATED,
 )
 async def generate_dataset(
@@ -45,34 +45,50 @@ async def generate_dataset(
             detail="Language not found.",
         )
 
-    # 2. Generate text from AI — raises HTTPException on failure
-    generated_text = await repo.get_response_from_generatorservice(
-        system_prompt=data.system_prompt,
-        language_name=language.name,
-        level=data.level,
-        user_input=data.user_input,  
-    )
+    # 2. Generate multiple datasets based on generation_count
+    generated_datasets = []
+    
+    for _ in range(data.generation_count):
+        try:
+            generated_text = await repo.get_response_from_generatorservice(
+                system_prompt=data.system_prompt,
+                language_name=language.name,
+                level=data.level,
+                user_input=data.user_input,  
+            )
 
-    # 2. Save to database with the given (or all) categories
-    dataset = await repo.update_response_todb(
-        generated_text=generated_text,
-        language_id=data.language_id,
-        category_ids=data.category_ids,
-        level=data.level,
-    )
+            dataset = await repo.update_response_todb(
+                generated_text=generated_text,
+                language_id=data.language_id,
+                category_ids=data.category_ids,
+                level=data.level,
+                target_languages=data.target_languages,
+            )
 
-    # 3. Reload with eager-loaded relationships via the repository method
-    full_dataset = await repo.get_dataset_with_categories(dataset.id)
+            full_dataset = await repo.get_dataset_with_categories(dataset.id)
+            if full_dataset:
+                generated_datasets.append(full_dataset)
+        except HTTPException as e:
+            if e.status_code == status.HTTP_409_CONFLICT:
+                continue # Skip this duplicate and keep trying to generate more
+            raise
+        except Exception as e:
+            # Depending on requirements, we can break, log, or raise here.
+            # We'll raise to halt the generation since one failed.
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error generating dataset during batch process: {str(e)}"
+            )
 
-    if full_dataset is None:
+    if not generated_datasets:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Dataset was saved but could not be retrieved.",
+            detail="Datasets were saved but could not be retrieved.",
         )
 
     return APIResponse(
         success=True,
-        message="Dataset generated successfully.",
-        data=full_dataset,
+        message=f"{len(generated_datasets)} dataset(s) generated successfully.",
+        data=generated_datasets,
         status=status.HTTP_201_CREATED,
     )

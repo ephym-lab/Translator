@@ -9,7 +9,12 @@ from app.services.TTTService import NLLBTTTService
 
 logger = logging.getLogger(__name__)
 
-async def generate_ai_responses_for_dataset(dataset_id: uuid.UUID, original_text: str, category_ids: list[uuid.UUID]):
+async def generate_ai_responses_for_dataset(
+    dataset_id: uuid.UUID, 
+    original_text: str, 
+    category_ids: list[uuid.UUID],
+    target_languages: list[uuid.UUID] | None = None
+):
     """
     Background task to generate AI translations for a dataset across all languages.
     """
@@ -24,6 +29,8 @@ async def generate_ai_responses_for_dataset(dataset_id: uuid.UUID, original_text
             responses_to_insert = []
             
             for lang in languages:
+                if target_languages is not None and lang.id not in target_languages:
+                    continue
                 if lang.name.lower() == "english":
                     continue
                 
