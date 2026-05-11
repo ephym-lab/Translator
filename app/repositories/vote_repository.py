@@ -18,7 +18,7 @@ class BaseVoteRepository(ABC):
 
     @abstractmethod
     async def get_all_for_response(
-        self, response_id: uuid.UUID, limit: int, offset: int
+        self, response_id: uuid.UUID, limit: int, offset: int, vote_type: VoteEnum | None = None
     ) -> tuple[list[ResponseVote], int]: ...
 
     @abstractmethod
@@ -54,15 +54,20 @@ class VoteRepository(BaseVoteRepository):
             raise HTTPException(status_code=500, detail="Database error: failed to fetch vote") from e
 
     async def get_all_for_response(
-        self, response_id: uuid.UUID, limit: int, offset: int
+        self, response_id: uuid.UUID, limit: int, offset: int, vote_type: VoteEnum | None = None
     ) -> tuple[list[ResponseVote], int]:
-        total = await self.count_all_for_response(response_id)
         try:
+            query = select(ResponseVote).where(ResponseVote.response_id == response_id)
+            count_query = select(func.count(ResponseVote.id)).where(ResponseVote.response_id == response_id)
+            
+            if vote_type:
+                query = query.where(ResponseVote.vote == vote_type)
+                count_query = count_query.where(ResponseVote.vote == vote_type)
+                
+            total = (await self.db.execute(count_query)).scalar() or 0
+            
             result = await self.db.execute(
-                select(ResponseVote)
-                .where(ResponseVote.response_id == response_id)
-                .limit(limit)
-                .offset(offset)
+                query.limit(limit).offset(offset)
             )
             return list(result.scalars().all()), total
         except Exception as e:

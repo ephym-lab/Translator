@@ -85,7 +85,7 @@ class GrokService(AIService):
 
 class MockService(AIService):
     def get_response(self, user_input, system_prompt):
-       return "Hello, this is a mocked dataset entry."
+       return "Hello, this is a mocked dataset. it is not a translation. this is for testing purposes"
 
 from app.core.config import settings
 
