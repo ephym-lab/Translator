@@ -11,6 +11,7 @@ from app.models.dataset_category import DatasetCategory
 from app.models.category import Category
 from app.repositories.dataset_repository import DatasetRepository
 from app.services.ai_translation_service import generate_ai_responses_for_dataset
+from app.models.response import Response
 
 
 class BaseGeneratorRepository(ABC):
@@ -21,7 +22,7 @@ class BaseGeneratorRepository(ABC):
     async def get_response_from_generatorservice(
         self,
         system_prompt: str,
-        language_id: uuid.UUID,
+        language_name: str,
         level: DatasetLevelEnum,
         user_input: str | None = None,
     ) -> str:
@@ -51,7 +52,7 @@ class GeneratorRepository(BaseGeneratorRepository):
     async def get_response_from_generatorservice(
         self,
         system_prompt: str,
-        language_id: uuid.UUID,
+        language_name: str,
         level: DatasetLevelEnum,
         user_input: str | None = None,
     ) -> str:
@@ -59,7 +60,7 @@ class GeneratorRepository(BaseGeneratorRepository):
         if not user_input:
             user_input = (
                 f"Generate a sample text for a translation dataset. "
-                f"Language ID: {language_id}. "
+                f"Language: {language_name}. "
                 f"Difficulty level: {level.value}. "
                 f"Return plain text only, no explanations."
             )
@@ -159,7 +160,11 @@ class GeneratorRepository(BaseGeneratorRepository):
         # Encapsulates the eager-load query so the router stays clean
         result = await self.db.execute(
             select(UncleanDataset)
-            .options(selectinload(UncleanDataset.allowed_categories))
+            .options(
+                selectinload(UncleanDataset.allowed_categories),
+                selectinload(UncleanDataset.responses).selectinload(Response.language),
+                selectinload(UncleanDataset.responses).selectinload(Response.votes),
+            )
             .where(UncleanDataset.id == dataset_id)
         )
         return result.scalar_one_or_none()

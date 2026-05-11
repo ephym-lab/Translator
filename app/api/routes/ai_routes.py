@@ -8,12 +8,17 @@ from app.repositories.generator_repository import GeneratorRepository
 from app.schemas.ai import GenerateDatasetRequest
 from app.schemas.dataset import DatasetResponse
 from app.schemas.api_response import APIResponse
+from app.repositories.language_repository import LanguageRepository
 
 router = APIRouter(prefix="/ai", tags=["AI Generation"])
 
 
 def get_generator_repo(db: AsyncSession = Depends(get_db)) -> GeneratorRepository:
     return GeneratorRepository(db)
+
+
+def get_language_repo(db: AsyncSession = Depends(get_db)) -> LanguageRepository:
+    return LanguageRepository(db)
 
 
 @router.post(
@@ -24,6 +29,7 @@ def get_generator_repo(db: AsyncSession = Depends(get_db)) -> GeneratorRepositor
 async def generate_dataset(
     data: GenerateDatasetRequest,
     repo: GeneratorRepository = Depends(get_generator_repo),
+    lang_repo: LanguageRepository = Depends(get_language_repo),
     _: User = Depends(require_admin),
 ):
     """
@@ -31,12 +37,20 @@ async def generate_dataset(
     Automatically assigns all available categories when none are specified.
     Admin only.
     """
-    # 1. Generate text from AI — raises HTTPException on failure
+    # 1. Fetch the language to pass its name to the AI
+    language = await lang_repo.get_by_id(data.language_id)
+    if not language:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Language not found.",
+        )
+
+    # 2. Generate text from AI — raises HTTPException on failure
     generated_text = await repo.get_response_from_generatorservice(
         system_prompt=data.system_prompt,
-        language_id=data.language_id,
+        language_name=language.name,
         level=data.level,
-        user_input=data.user_input,  # None → repo auto-builds the prompt
+        user_input=data.user_input,  
     )
 
     # 2. Save to database with the given (or all) categories
