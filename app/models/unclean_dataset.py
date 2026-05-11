@@ -31,3 +31,7 @@ class UncleanDataset(TimestampMixin, Base):
     allowed_categories = relationship("Category", secondary="dataset_categories", backref="datasets")
     language = relationship("Language", back_populates="unclean_datasets")
     responses = relationship("Response", back_populates="dataset")
+
+    @property
+    def ai_responses(self):
+        return [r for r in self.responses if r.is_ai_generated]

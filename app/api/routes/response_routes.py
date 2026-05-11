@@ -50,10 +50,11 @@ async def list_all_responses(
     limit: int = 20,
     offset: int = 0,
     language_id: Optional[uuid.UUID] = None,
+    is_ai_generated: Optional[bool] = None,
     svc: ResponseService = Depends(get_service),
 ):
     """List all responses. Optionally filter by language_id."""
-    items, total = await svc.list_all(limit, offset, language_id=language_id)
+    items, total = await svc.list_all(limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
     return APIResponse(
         success=True,
         message="Responses retrieved successfully.",
@@ -68,11 +69,12 @@ async def list_responses_for_dataset(
     limit: int = 20,
     offset: int = 0,
     language_id: Optional[uuid.UUID] = None,
+    is_ai_generated: Optional[bool] = None,
     svc: ResponseService = Depends(get_service),
 ):
     """List responses for a specific dataset. Optionally filter by language_id
     to see e.g. all Kikuyu translations of a specific text."""
-    items, total = await svc.list_by_dataset(dataset_id, limit, offset, language_id=language_id)
+    items, total = await svc.list_by_dataset(dataset_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
     return APIResponse(
         success=True,
         message="Responses for dataset retrieved successfully.",

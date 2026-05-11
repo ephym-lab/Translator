@@ -10,6 +10,7 @@ from app.models.unclean_dataset import UncleanDataset, DatasetLevelEnum
 from app.models.dataset_category import DatasetCategory
 from app.models.category import Category
 from app.repositories.dataset_repository import DatasetRepository
+from app.services.ai_translation_service import generate_ai_responses_for_dataset
 
 
 class BaseGeneratorRepository(ABC):
@@ -107,6 +108,16 @@ class GeneratorRepository(BaseGeneratorRepository):
 
                 await self.db.commit()
                 await self.db.refresh(dataset)
+                
+                # Dispatch background task for translation
+                asyncio.create_task(
+                    generate_ai_responses_for_dataset(
+                        dataset_id=dataset.id,
+                        original_text=dataset.original_text,
+                        category_ids=all_category_ids
+                    )
+                )
+                
                 return dataset
 
             else:
@@ -119,6 +130,16 @@ class GeneratorRepository(BaseGeneratorRepository):
                     },
                     category_ids=category_ids,
                 )
+                
+                # Dispatch background task for translation
+                asyncio.create_task(
+                    generate_ai_responses_for_dataset(
+                        dataset_id=dataset.id,
+                        original_text=dataset.original_text,
+                        category_ids=category_ids
+                    )
+                )
+                
                 return dataset
 
         except HTTPException:

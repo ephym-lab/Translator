@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.models.unclean_dataset import DatasetLevelEnum
 from app.schemas.category import CategoryResponse
+from app.schemas.response import AIResponseItem
 
 
 class DatasetCreate(BaseModel):
@@ -28,6 +29,7 @@ class DatasetResponse(BaseModel):
     response_percentage: float
     is_clean: bool
     allowed_categories: list[CategoryResponse] = []
+    ai_responses: list[AIResponseItem] = []
     language_id: uuid.UUID
     created_at: datetime
     updated_at: datetime

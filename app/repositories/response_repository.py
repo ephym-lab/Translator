@@ -25,10 +25,11 @@ class BaseResponseRepository(ABC):
     async def get_all_for_dataset(
         self, dataset_id: uuid.UUID, limit: int, offset: int,
         language_id: Optional[uuid.UUID] = None,
+        is_ai_generated: Optional[bool] = None,
     ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
-    async def get_all(self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None) -> tuple[list[Response], int]: ...
+    async def get_all(self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None) -> tuple[list[Response], int]: ...
 
     @abstractmethod
     async def create(self, response: Response) -> Response: ...
@@ -73,11 +74,14 @@ class ResponseRepository(BaseResponseRepository):
     async def get_all_for_dataset(
         self, dataset_id: uuid.UUID, limit: int, offset: int,
         language_id: Optional[uuid.UUID] = None,
+        is_ai_generated: Optional[bool] = None,
     ) -> tuple[list[Response], int]:
         try:
             filters = [Response.dataset_id == dataset_id]
             if language_id:
                 filters.append(Response.language_id == language_id)
+            if is_ai_generated is not None:
+                filters.append(Response.is_ai_generated == is_ai_generated)
             total = (await self.db.execute(select(func.count(Response.id)).where(and_(*filters)))).scalar()
             result = await self.db.execute(
                 select(Response).where(and_(*filters)).limit(limit).offset(offset)
@@ -87,7 +91,7 @@ class ResponseRepository(BaseResponseRepository):
             raise HTTPException(status_code=500, detail="Database error: failed to list responses") from e
 
     async def get_all(
-        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None
+        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None
     ) -> tuple[list[Response], int]:
         try:
             query = select(Response)
@@ -95,6 +99,9 @@ class ResponseRepository(BaseResponseRepository):
             if language_id:
                 query = query.where(Response.language_id == language_id)
                 count_q = count_q.where(Response.language_id == language_id)
+            if is_ai_generated is not None:
+                query = query.where(Response.is_ai_generated == is_ai_generated)
+                count_q = count_q.where(Response.is_ai_generated == is_ai_generated)
             total = (await self.db.execute(count_q)).scalar()
             result = await self.db.execute(query.limit(limit).offset(offset))
             return list(result.scalars().all()), total

@@ -77,7 +77,11 @@ class UserDatasetSessionRepository(BaseUserDatasetSessionRepository):
             
             query = (
                 select(UncleanDataset)
-                .options(selectinload(UncleanDataset.allowed_categories))
+                .options(
+                    selectinload(UncleanDataset.allowed_categories),
+                    selectinload(UncleanDataset.responses).selectinload(Response.language),
+                    selectinload(UncleanDataset.responses).selectinload(Response.votes),
+                )
                 .where(UncleanDataset.id.not_in(seen_subq))
             )
             if category_id:

@@ -28,11 +28,12 @@ class BaseResponseService(ABC):
     async def list_by_dataset(
         self, dataset_id: uuid.UUID, limit: int, offset: int,
         language_id: Optional[uuid.UUID] = None,
+        is_ai_generated: Optional[bool] = None,
     ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
     async def list_all(
-        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None
+        self, limit: int, offset: int, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None
     ) -> tuple[list[Response], int]: ...
 
     @abstractmethod
@@ -124,13 +125,14 @@ class ResponseService(BaseResponseService):
     async def list_by_dataset(
         self, dataset_id: uuid.UUID, limit: int = 20, offset: int = 0,
         language_id: Optional[uuid.UUID] = None,
+        is_ai_generated: Optional[bool] = None,
     ) -> tuple[list[Response], int]:
-        return await self.repo.get_all_for_dataset(dataset_id, limit, offset, language_id=language_id)
+        return await self.repo.get_all_for_dataset(dataset_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
 
     async def list_all(
-        self, limit: int = 20, offset: int = 0, language_id: Optional[uuid.UUID] = None
+        self, limit: int = 20, offset: int = 0, language_id: Optional[uuid.UUID] = None, is_ai_generated: Optional[bool] = None
     ) -> tuple[list[Response], int]:
-        return await self.repo.get_all(limit, offset, language_id=language_id)
+        return await self.repo.get_all(limit, offset, language_id=language_id, is_ai_generated=is_ai_generated)
 
     async def update(self, response_id: uuid.UUID, user_id: uuid.UUID, data: ResponseUpdate) -> Response:
         resp = await self.get(response_id)

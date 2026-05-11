@@ -46,7 +46,11 @@ class DatasetRepository(BaseDatasetRepository):
         try:
             result = await self.db.execute(
                 select(UncleanDataset)
-                .options(selectinload(UncleanDataset.allowed_categories))
+                .options(
+                    selectinload(UncleanDataset.allowed_categories),
+                    selectinload(UncleanDataset.responses).selectinload(Response.language),
+                    selectinload(UncleanDataset.responses).selectinload(Response.votes),
+                )
                 .where(UncleanDataset.id == dataset_id)
             )
             return result.scalar_one_or_none()
@@ -58,7 +62,11 @@ class DatasetRepository(BaseDatasetRepository):
             total = (await self.db.execute(select(func.count(UncleanDataset.id)))).scalar()
             result = await self.db.execute(
                 select(UncleanDataset)
-                .options(selectinload(UncleanDataset.allowed_categories))
+                .options(
+                    selectinload(UncleanDataset.allowed_categories),
+                    selectinload(UncleanDataset.responses).selectinload(Response.language),
+                    selectinload(UncleanDataset.responses).selectinload(Response.votes),
+                )
                 .limit(limit)
                 .offset(offset)
             )

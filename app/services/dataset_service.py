@@ -8,6 +8,8 @@ from app.models.unclean_dataset import UncleanDataset
 from app.repositories.dataset_repository import DatasetRepository
 from app.repositories.category_repository import CategoryRepository
 from app.schemas.dataset import DatasetCreate, DatasetUpdate
+import asyncio
+from app.services.ai_translation_service import generate_ai_responses_for_dataset
 
 
 class BaseDatasetService(ABC):
@@ -50,7 +52,17 @@ class DatasetService(BaseDatasetService):
             
         dataset_data = data.model_dump()
         category_ids = dataset_data.pop("category_ids")
-        return await self.repo.create(dataset_data, category_ids)
+        dataset = await self.repo.create(dataset_data, category_ids)
+        
+        # Dispatch AI translation background task
+        asyncio.create_task(
+            generate_ai_responses_for_dataset(
+                dataset_id=dataset.id,
+                original_text=dataset.original_text,
+                category_ids=category_ids
+            )
+        )
+        return dataset
 
     async def get(self, dataset_id: uuid.UUID) -> UncleanDataset:
         ds = await self.repo.get_by_id(dataset_id)
