@@ -71,3 +71,4 @@ Thumbs.db
 
 alembic/versions/*.pyc
 
+ENDPOINTS.md
