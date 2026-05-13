@@ -24,7 +24,7 @@ class BaseDatasetService(ABC):
     async def get(self, dataset_id: uuid.UUID) -> UncleanDataset: ...
 
     @abstractmethod
-    async def list(self, limit: int, offset: int) -> Tuple[List[UncleanDataset], int]: ...
+    async def list(self, limit: int, offset: int, search: str | None = None) -> Tuple[List[UncleanDataset], int]: ...
 
     @abstractmethod
     async def list_with_ai_responses(self, limit: int, offset: int) -> Tuple[List[UncleanDataset], int]: ...
@@ -40,8 +40,7 @@ class BaseDatasetService(ABC):
 
     @abstractmethod
     async def recalculate_percentage(self, dataset_id: uuid.UUID) -> None: ...
-    @abstractmethod
-    async def search(self, query:str,limit:int, offset:int)->tuple[list[UncleanDataset], int]: ...
+
     
 
 
@@ -80,8 +79,8 @@ class DatasetService(BaseDatasetService):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Dataset not found.")
         return ds
 
-    async def list(self, limit: int = 20, offset: int = 0) -> Tuple[List[UncleanDataset], int]:
-        return await self.repo.get_all(limit, offset)
+    async def list(self, limit: int = 20, offset: int = 0, search: str | None = None) -> Tuple[List[UncleanDataset], int]:
+        return await self.repo.get_all(limit, offset, search)
 
     async def list_with_ai_responses(self, limit: int = 20, offset: int = 0) -> Tuple[List[UncleanDataset], int]:
         return await self.repo.get_datasets_with_ai_responses(limit, offset)
@@ -129,5 +128,4 @@ class DatasetService(BaseDatasetService):
         ds.is_clean = pct >= 80.0
         await self.repo.save(ds)
 
-    async def search(self, query:str,limit:int=20, offset:int=0)->Tuple[List[UncleanDataset], int]:
-        return await self.repo.search(query,limit, offset)
+

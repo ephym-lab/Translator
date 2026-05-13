@@ -18,6 +18,9 @@ def get_service(db: AsyncSession = Depends(get_db)) -> DatasetService:
     return DatasetService(db)
 
 
+
+
+
 @router.post("/", response_model=APIResponse[DatasetResponse], status_code=status.HTTP_201_CREATED)
 async def create_dataset(
     data: DatasetCreate,
@@ -29,8 +32,13 @@ async def create_dataset(
 
 
 @router.get("/", response_model=APIResponse[PaginatedData[DatasetResponse]])
-async def list_datasets(limit: int = 20, offset: int = 0, svc: DatasetService = Depends(get_service)):
-    items, total = await svc.list(limit, offset)
+async def list_datasets(
+    search: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    svc: DatasetService = Depends(get_service)
+):
+    items, total = await svc.list(limit, offset, search)
     return APIResponse(
         success=True,
         message="Datasets retrieved successfully.",
@@ -85,18 +93,3 @@ async def delete_dataset(
     return APIResponse(success=True, message="Dataset deleted successfully.", status=status.HTTP_200_OK)
 
 
-@router.get("/search", response_model=APIResponse[PaginatedData[DatasetResponse]])
-async def search_datasets(
-    search: str,
-    limit: int = 20,
-    offset: int = 0,
-    svc: DatasetService = Depends(get_service),
-):
-    """Search datasets. Optional filter by subtribe_id (for cascading dropdowns). Public."""
-    items, total = await svc.search(search, limit, offset)
-    return APIResponse(
-        success=True,
-        message="Datasets retrieved successfully.",
-        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
-        status=status.HTTP_200_OK
-    )

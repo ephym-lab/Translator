@@ -18,7 +18,7 @@ class BaseDatasetRepository(ABC):
     async def get_by_id(self, dataset_id: uuid.UUID) -> UncleanDataset | None: ...
 
     @abstractmethod
-    async def get_all(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]: ...
+    async def get_all(self, limit: int, offset: int, search: str | None = None) -> tuple[list[UncleanDataset], int]: ...
 
     @abstractmethod
     async def get_datasets_with_ai_responses(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]: ...
@@ -37,8 +37,7 @@ class BaseDatasetRepository(ABC):
 
     @abstractmethod
     async def count_accepted_responses(self, dataset_id: uuid.UUID) -> int: ...
-    @abstractmethod
-    async def search(self, query:str,limit:int, offset:int)->tuple[list[UncleanDataset], int]: ...
+
 
 
 class DatasetRepository(BaseDatasetRepository):
@@ -62,18 +61,23 @@ class DatasetRepository(BaseDatasetRepository):
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to fetch dataset") from e
 
-    async def get_all(self, limit: int, offset: int) -> tuple[list[UncleanDataset], int]:
+    async def get_all(self, limit: int, offset: int, search: str | None = None) -> tuple[list[UncleanDataset], int]:
         try:
-            total = (await self.db.execute(select(func.count(UncleanDataset.id)))).scalar()
-            result = await self.db.execute(
-                select(UncleanDataset)
-                .options(
+            query = select(UncleanDataset).options(
                     selectinload(UncleanDataset.allowed_categories),
                     selectinload(UncleanDataset.responses).selectinload(Response.language),
                     selectinload(UncleanDataset.responses).selectinload(Response.votes),
                 )
-                .limit(limit)
-                .offset(offset)
+            
+            count_query = select(func.count(UncleanDataset.id))
+            
+            if search:
+                query = query.where(UncleanDataset.prompt.ilike(f"%{search}%"))
+                count_query = count_query.where(UncleanDataset.prompt.ilike(f"%{search}%"))
+
+            total = (await self.db.execute(count_query)).scalar() or 0
+            result = await self.db.execute(
+                query.limit(limit).offset(offset)
             )
             return list(result.scalars().all()), total
         except Exception as e:
@@ -151,23 +155,7 @@ class DatasetRepository(BaseDatasetRepository):
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to count accepted responses") from e
     
-    async def search(self, query:str,limit:int, offset:int)->tuple[list[UncleanDataset], int]:
-        try:
-            total = (await self.db.execute(select(func.count(UncleanDataset.id)))).scalar()
-            result = await self.db.execute(
-                select(UncleanDataset)
-                .options(
-                    selectinload(UncleanDataset.allowed_categories),
-                    selectinload(UncleanDataset.responses).selectinload(Response.language),
-                    selectinload(UncleanDataset.responses).selectinload(Response.votes),
-                )
-                .where(UncleanDataset.prompt.ilike(f"%{query}%"))
-                .limit(limit)
-                .offset(offset)
-            )
-            return list(result.scalars().all()), total
-        except Exception as e:
-            raise HTTPException(status_code=500, detail="Database error: failed to search datasets") from e
+
     
     
 
