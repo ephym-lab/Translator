@@ -18,7 +18,7 @@ from app.models.response_vote import VoteEnum
 class BaseResponseService(ABC):
     def __init__(self, db: AsyncSession):
         self.db = db
-
+    
     @abstractmethod
     async def submit(self, user_id: uuid.UUID, data: ResponseCreate) -> Response: ...
 
@@ -46,6 +46,14 @@ class BaseResponseService(ABC):
 
     @abstractmethod
     async def next_dataset(self, user_id: uuid.UUID, language_id: uuid.UUID, category_id: Optional[uuid.UUID] = None) -> UncleanDataset: ...
+
+    @abstractmethod
+    async def list_by_user(
+        self, user_id: uuid.UUID, limit: int, offset: int,
+        language_id: Optional[uuid.UUID] = None,
+        is_ai_generated: Optional[bool] = None,
+        vote_type: Optional[VoteEnum] = None,
+    ) -> tuple[list[Response], int]: ...
 
 
 class ResponseService(BaseResponseService):
@@ -149,3 +157,13 @@ class ResponseService(BaseResponseService):
         if resp.user_id != user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Cannot delete another user's response.")
         await self.repo.delete(resp)
+
+
+    async def list_by_user(
+        self, user_id: uuid.UUID, limit: int = 20, offset: int = 0,
+        language_id: Optional[uuid.UUID] = None,
+        is_ai_generated: Optional[bool] = None,
+        vote_type: Optional[VoteEnum] = None,
+    ) -> tuple[list[Response], int]:
+        return await self.repo.get_all_for_user(user_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated, vote_type=vote_type)
+    

@@ -72,8 +72,8 @@ class DatasetRepository(BaseDatasetRepository):
             count_query = select(func.count(UncleanDataset.id))
             
             if search:
-                query = query.where(UncleanDataset.prompt.ilike(f"%{search}%"))
-                count_query = count_query.where(UncleanDataset.prompt.ilike(f"%{search}%"))
+                query = query.where(UncleanDataset.original_text.ilike(f"%{search}%"))
+                count_query = count_query.where(UncleanDataset.original_text.ilike(f"%{search}%"))
 
             total = (await self.db.execute(count_query)).scalar() or 0
             result = await self.db.execute(

@@ -47,7 +47,7 @@ async def get_current_user(
         .where(User.id == uuid.UUID(user_id))
     )
     user = result.scalar_one_or_none()
-
+    print(f"Currrent user id {user.id} of type {type(user.id)}")
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

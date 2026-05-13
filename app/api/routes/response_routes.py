@@ -111,3 +111,45 @@ async def delete_response(
 ):
     await svc.delete(response_id, current_user.id)
     return APIResponse(success=True, message="Response deleted successfully.", status=status.HTTP_200_OK)
+
+@router.get("/user/me", response_model=APIResponse[PaginatedData[ResponseSchema]])
+async def list_my_responses(
+    limit: int = 20,
+    offset: int = 0,
+    language_id: Optional[uuid.UUID] = None,
+    is_ai_generated: Optional[bool] = None,
+    vote_type: Optional[VoteEnum] = None,
+    current_user: User = Depends(get_current_user),
+    svc: ResponseService = Depends(get_service),
+):
+    """List responses for the current user. Optionally filter by language_id
+    to see e.g. all Kikuyu translations of a specific text. You can also filter by vote_type."""
+    items, total = await svc.list_by_user(current_user.id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated, vote_type=vote_type)
+    return APIResponse(
+        success=True,
+        message="Responses for user retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+        status=status.HTTP_200_OK
+    )
+
+#get user responses
+@router.get("/user/{user_id}", response_model=APIResponse[PaginatedData[ResponseSchema]])
+async def list_user_responses(
+    user_id: uuid.UUID,
+    limit: int = 20,
+    offset: int = 0,
+    language_id: Optional[uuid.UUID] = None,
+    is_ai_generated: Optional[bool] = None,
+    vote_type: Optional[VoteEnum] = None,
+    svc: ResponseService = Depends(get_service),
+):
+    """List responses for a specific user. Optionally filter by language_id
+    to see e.g. all Kikuyu translations of a specific text. You can also filter by vote_type."""
+    items, total = await svc.list_by_user(user_id, limit, offset, language_id=language_id, is_ai_generated=is_ai_generated, vote_type=vote_type)
+    return APIResponse(
+        success=True,
+        message="Responses for user retrieved successfully.",
+        data=PaginatedData(total=total, limit=limit, offset=offset, items=items),
+        status=status.HTTP_200_OK
+    )
+
