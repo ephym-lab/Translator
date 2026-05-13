@@ -74,3 +74,6 @@ async def delete_language(
     """Delete a language. Admin only."""
     await svc.delete(language_id)
     return APIResponse(success=True, message="Language deleted successfully.", status=status.HTTP_200_OK)
+
+
+

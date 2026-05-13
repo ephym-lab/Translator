@@ -40,6 +40,9 @@ class BaseDatasetService(ABC):
 
     @abstractmethod
     async def recalculate_percentage(self, dataset_id: uuid.UUID) -> None: ...
+    @abstractmethod
+    async def search(self, query:str,limit:int, offset:int)->tuple[list[UncleanDataset], int]: ...
+    
 
 
 class DatasetService(BaseDatasetService):
@@ -125,3 +128,6 @@ class DatasetService(BaseDatasetService):
         ds.response_percentage = pct
         ds.is_clean = pct >= 80.0
         await self.repo.save(ds)
+
+    async def search(self, query:str,limit:int=20, offset:int=0)->Tuple[List[UncleanDataset], int]:
+        return await self.repo.search(query,limit, offset)

@@ -37,6 +37,8 @@ class BaseDatasetRepository(ABC):
 
     @abstractmethod
     async def count_accepted_responses(self, dataset_id: uuid.UUID) -> int: ...
+    @abstractmethod
+    async def search(self, query:str,limit:int, offset:int)->tuple[list[UncleanDataset], int]: ...
 
 
 class DatasetRepository(BaseDatasetRepository):
@@ -148,4 +150,24 @@ class DatasetRepository(BaseDatasetRepository):
             return result.scalar() or 0
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to count accepted responses") from e
+    
+    async def search(self, query:str,limit:int, offset:int)->tuple[list[UncleanDataset], int]:
+        try:
+            total = (await self.db.execute(select(func.count(UncleanDataset.id)))).scalar()
+            result = await self.db.execute(
+                select(UncleanDataset)
+                .options(
+                    selectinload(UncleanDataset.allowed_categories),
+                    selectinload(UncleanDataset.responses).selectinload(Response.language),
+                    selectinload(UncleanDataset.responses).selectinload(Response.votes),
+                )
+                .where(UncleanDataset.prompt.ilike(f"%{query}%"))
+                .limit(limit)
+                .offset(offset)
+            )
+            return list(result.scalars().all()), total
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Database error: failed to search datasets") from e
+    
+    
 
