@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
-from app.schemas.tribe import TribeCreate, TribeData, TribeUpdate,TribeResponse
+from app.schemas.tribe import TribeCreate, TribeData, TribeUpdate
 from app.schemas.pagination import PaginatedData
 from app.schemas.api_response import APIResponse
 from app.services.tribe_service import TribeService
@@ -18,7 +18,7 @@ def get_service(db: AsyncSession = Depends(get_db)) -> TribeService:
     return TribeService(db)
 
 
-@router.post("/", response_model=APIResponse[TribeResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=APIResponse[TribeData], status_code=status.HTTP_201_CREATED)
 async def create_tribe(
     data: TribeCreate,
     svc: TribeService = Depends(get_service),
