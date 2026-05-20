@@ -67,7 +67,7 @@ async def update_me(
     return APIResponse(success=True, message="Profile updated successfully.", data=result, status=status.HTTP_200_OK)
 
 
-# ─── User language management ─────────────────────────────────────────────────
+# User language management 
 
 @router.get("/me/languages", response_model=APIResponse[list[LanguageNestedResponse]])
 async def get_my_languages(
@@ -101,17 +101,18 @@ async def remove_my_language(
     return APIResponse(success=True, message="Language removed successfully.", status=status.HTTP_200_OK)
 
 
-# ─── Admin endpoints ──────────────────────────────────────────────────────────
+#Admin endpoints
 
 @router.get("/", response_model=APIResponse[PaginatedData[UserResponse]])
 async def list_users(
+    search: str | None = None,
     limit: int = 20,
     offset: int = 0,
     svc: UserService = Depends(get_service),
     _: User = Depends(get_current_user),
 ):
     """List all users (paginated). Requires authentication."""
-    users, total = await svc.list_users(limit, offset)
+    users, total = await svc.list_users(limit, offset, search)
     return APIResponse(
         success=True,
         message="Users retrieved successfully.",

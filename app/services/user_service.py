@@ -43,7 +43,7 @@ class BaseUserService(ABC):
     async def get_user(self, user_id: uuid.UUID) -> User: ...
 
     @abstractmethod
-    async def list_users(self, limit: int, offset: int) -> tuple[list[User], int]: ...
+    async def list_users(self, limit: int, offset: int, search: str | None = None) -> tuple[list[User], int]: ...
 
     @abstractmethod
     async def update_user(self, user_id: uuid.UUID, data: UserUpdate) -> User: ...
@@ -222,8 +222,8 @@ class UserService(BaseUserService):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found.")
         return user
 
-    async def list_users(self, limit: int = 20, offset: int = 0) -> tuple[list[User], int]:
-        return await self.repo.get_all(limit, offset)
+    async def list_users(self, limit: int = 20, offset: int = 0, search: str | None = None) -> tuple[list[User], int]:
+        return await self.repo.get_all(limit, offset, search)
 
     async def update_user(self, user_id: uuid.UUID, data: UserUpdate) -> User:
         user = await self.get_user(user_id)
@@ -235,7 +235,7 @@ class UserService(BaseUserService):
         user = await self.get_user(user_id)
         await self.repo.delete(user)
 
-    # ─── Language management ──────────────────────────────────────────────────
+    # Language management
 
     async def add_language(self, user_id: uuid.UUID, language_id: uuid.UUID) -> list[Language]:
         lang = await self.lang_repo.get_by_id(language_id)

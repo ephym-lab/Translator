@@ -23,7 +23,7 @@ class BaseUserRepository(ABC):
     async def get_by_email_or_username(self, email: str, username: str) -> User | None: ...
 
     @abstractmethod
-    async def get_all(self, limit: int, offset: int) -> tuple[list[User], int]: ...
+    async def get_all(self, limit: int, offset: int, search: str | None = None) -> tuple[list[User], int]: ...
 
     @abstractmethod
     async def create(self, user: User) -> User: ...
@@ -86,14 +86,23 @@ class UserRepository(BaseUserRepository):
         except Exception as e:
             raise HTTPException(status_code=500, detail="Database error: failed to fetch user") from e
 
-    async def get_all(self, limit: int, offset: int) -> tuple[list[User], int]:
+    async def get_all(self, limit: int, offset: int, search: str | None = None) -> tuple[list[User], int]:
         try:
-            total = (await self.db.execute(select(func.count(User.id)))).scalar()
+            query = select(User).options(selectinload(User.languages))
+            count_query = select(func.count(User.id))
+
+            if search:
+                filters = or_(
+                    User.username.ilike(f"%{search}%"),
+                    User.name.ilike(f"%{search}%"),
+                    User.email.ilike(f"%{search}%")
+                )
+                query = query.where(filters)
+                count_query = count_query.where(filters)
+
+            total = (await self.db.execute(count_query)).scalar() or 0
             result = await self.db.execute(
-                select(User)
-                .options(selectinload(User.languages))
-                .limit(limit)
-                .offset(offset)
+                query.limit(limit).offset(offset)
             )
             return list(result.scalars().all()), total
         except Exception as e:
