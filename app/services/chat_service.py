@@ -205,6 +205,18 @@ class ChatService:
             return user.languages[0].name.lower().strip()
         return "english"
 
+    async def delete_sessions(
+        self, session_id: uuid.UUID, current_user: User
+    ) -> None:
+        session = await self.repo.get_session_by_id(session_id)
+        if not session:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat session not found.")
+        self._assert_participant(session, current_user.id)
+        return await self.repo.delete_session(session)
+
+    async def delete_all_sessions(self):
+        return await self.repo.delete_all_sessions()
+
     @staticmethod
     def _assert_participant(session: ChatSession, user_id: uuid.UUID) -> None:
         if session.initiator_id != user_id and session.recipient_id != user_id:

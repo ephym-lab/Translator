@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 from fastapi import HTTPException
-from sqlalchemy import select, or_, and_
+from sqlalchemy import select, or_, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -142,3 +142,20 @@ class ChatRepository:
         except Exception as e:
             await self.db.rollback()
             raise HTTPException(status_code=500, detail=f"DB error creating message: {e}") from e
+
+    async def delete_session(self, session: ChatSession) -> None:
+        try:
+            await self.db.delete(session)
+            await self.db.commit()
+        except Exception as e:
+            await self.db.rollback()
+            raise HTTPException(status_code=500, detail=f"DB error deleting session: {e}") from e
+
+    async def delete_all_sessions(self) -> None:
+        try:
+            await self.db.execute(delete(ChatMessage))
+            await self.db.execute(delete(ChatSession))
+            await self.db.commit()
+        except Exception as e:
+            await self.db.rollback()
+            raise HTTPException(status_code=500, detail=f"DB error deleting all sessions: {e}") from e  

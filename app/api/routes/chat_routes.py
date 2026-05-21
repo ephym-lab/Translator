@@ -237,3 +237,40 @@ async def get_messages(
         data=PaginatedData(total=total, limit=limit, offset=offset, items=messages),
         status=status.HTTP_200_OK,
     )
+
+#delete chat session
+@router.delete(
+    "/sessions/{session_id}/delete",
+    response_model=APIResponse[ChatSessionResponse],
+    summary="Delete a chat session",
+)
+async def delete_session(
+    session_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    svc: ChatService = Depends(get_service),
+):
+    result = await svc.delete_session(session_id, current_user)
+    return APIResponse(
+        success=True,
+        message="Chat session deleted successfully.",
+        data=result,
+        status=status.HTTP_200_OK,
+    )
+
+#delete all sessions for testing purposes-- open endpoint 
+
+@router.delete(
+    "/sessions/delete/all",
+    response_model=APIResponse[str],
+    summary="Delete all chat sessions",
+)
+async def delete_all_sessions(
+    svc: ChatService = Depends(get_service),
+):
+    result = await svc.delete_all_sessions()
+    return APIResponse(
+        success=True,
+        message="All chat sessions deleted successfully.",
+        data=result,
+        status=status.HTTP_200_OK,
+    )
