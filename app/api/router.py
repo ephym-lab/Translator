@@ -11,7 +11,8 @@ from app.api.routes import (
     vote_routes,
     ai_routes,
     translator_routes,
-    admin_routes
+    admin_routes,
+    chat_routes
 )
 
 api_router = APIRouter()
@@ -41,3 +42,6 @@ api_router.include_router(translator_routes.router)
 
 # Admin
 api_router.include_router(admin_routes.router)
+
+# Chat
+api_router.include_router(chat_routes.router)

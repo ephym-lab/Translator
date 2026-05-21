@@ -121,6 +121,25 @@ async def list_users(
     )
 
 
+@router.get("/{user_id}/languages", response_model=APIResponse[list[LanguageNestedResponse]])
+async def get_user_languages(
+    user_id: uuid.UUID,
+    svc: UserService = Depends(get_service),
+    _: User = Depends(get_current_user),
+):
+    """
+    Return all languages registered by a specific user.
+    Useful for building a language-selection dropdown before sending a chat message.
+    """
+    result = await svc.get_user_languages(user_id)
+    return APIResponse(
+        success=True,
+        message="User languages retrieved successfully.",
+        data=result,
+        status=status.HTTP_200_OK,
+    )
+
+
 @router.get("/{user_id}", response_model=APIResponse[UserResponse])
 async def get_user(
     user_id: uuid.UUID,
