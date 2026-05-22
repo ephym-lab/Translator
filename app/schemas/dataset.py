@@ -29,6 +29,20 @@ class DatasetResponse(BaseModel):
     response_percentage: float
     is_clean: bool
     allowed_categories: list[CategoryResponse] = []
+    # ai_responses: list[AIResponseItem] = []
+    language_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class OneDatasetResponse(BaseModel):
+    id: uuid.UUID
+    original_text: str
+    level: DatasetLevelEnum
+    response_percentage: float
+    is_clean: bool
+    allowed_categories: list[CategoryResponse] = []
     ai_responses: list[AIResponseItem] = []
     language_id: uuid.UUID
     created_at: datetime

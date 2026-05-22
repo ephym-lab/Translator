@@ -65,7 +65,7 @@ class DatasetRepository(BaseDatasetRepository):
         try:
             query = select(UncleanDataset).options(
                     selectinload(UncleanDataset.allowed_categories),
-                    selectinload(UncleanDataset.responses).selectinload(Response.language),
+                    # selectinload(UncleanDataset.responses).selectinload(Response.language),
                     selectinload(UncleanDataset.responses).selectinload(Response.votes),
                 )
             

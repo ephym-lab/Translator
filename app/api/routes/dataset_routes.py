@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user, get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
-from app.schemas.dataset import DatasetCreate, DatasetResponse, DatasetUpdate
+from app.schemas.dataset import DatasetCreate, DatasetResponse, DatasetUpdate, OneDatasetResponse
 from app.schemas.pagination import PaginatedData
 from app.schemas.api_response import APIResponse
 from app.services.dataset_service import DatasetService
@@ -34,7 +34,7 @@ async def create_dataset(
 @router.get("/", response_model=APIResponse[PaginatedData[DatasetResponse]])
 async def list_datasets(
     search: str | None = None,
-    limit: int = 20,
+    limit: int = 9,
     offset: int = 0,
     svc: DatasetService = Depends(get_service)
 ):
@@ -59,7 +59,7 @@ async def list_ai_generated_datasets(limit: int = 20, offset: int = 0, svc: Data
     )
 
 
-@router.get("/{dataset_id}", response_model=APIResponse[DatasetResponse])
+@router.get("/{dataset_id}", response_model=APIResponse[OneDatasetResponse])
 async def get_dataset(dataset_id: uuid.UUID, svc: DatasetService = Depends(get_service)):
     result = await svc.get(dataset_id)
     return APIResponse(success=True, message="Dataset retrieved successfully.", data=result, status=status.HTTP_200_OK)
