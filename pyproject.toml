@@ -27,10 +27,18 @@ dependencies = [
     "python-multipart>=0.0.9",
     "openai>=2.34.0",
     "google>=3.0.0",
-    "transformers>=5.8.0",
+    # NLLB and Fine-tuning dependencies
+    "transformers>=4.35.0",
     "sentencepiece>=0.2.1",
+    "torch>=2.0.0",
+    "datasets>=2.14.0",
+    "accelerate>=0.24.0",
+    "peft>=0.6.0",
+    "bitsandbytes>=0.41.0",  # For quantization (requires CUDA)
+    "pandas>=2.0.0",  # For CSV loading
+    "protobuf>=3.20.0",
+    "safetensors>=0.4.0",
 ]
-
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
