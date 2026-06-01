@@ -7,16 +7,16 @@
 .PHONY: finetune-list-models finetune-clean-models finetune-evaluate
 
 # Default fine-tuning settings
-FINETUNE_OUTPUT_DIR ?= ./models/finetuned
+FINETUNE_OUTPUT_DIR ?= ./finetuned_models/
 FINETUNE_EPOCHS ?= 5
 FINETUNE_BATCH_SIZE ?= 4
 FINETUNE_VALIDATION_SPLIT ?= 0.1
 
 # Language pair configurations
-EN_SWA_OUTPUT := ./models/eng_swa_finetuned
-EN_KIK_OUTPUT := ./models/eng_kik_finetuned
-EN_SOM_OUTPUT := ./models/eng_som_finetuned
-EN_AMA_OUTPUT := ./models/eng_ama_finetuned
+EN_SWA_OUTPUT := ./finetuned_models/eng_swa_finetuned
+EN_KIK_OUTPUT := ./finetuned_models/eng_kik_finetuned
+EN_SOM_OUTPUT := ./finetuned_models/eng_som_finetuned
+EN_AMA_OUTPUT := ./finetuned_models/eng_ama_finetuned
 
 # ============================================
 # Basic Fine-tuning Examples
