@@ -5,6 +5,8 @@
 .PHONY: finetune-example finetune-csv finetune-json finetune-txt finetune-all
 .PHONY: finetune-english-swahili finetune-english-kikuyu finetune-english-somali
 .PHONY: finetune-list-models finetune-clean-models finetune-evaluate
+.PHONY: finetune-cli finetune-cli-csv finetune-cli-json finetune-cli-txt finetune-cli-example finetune-cli-help
+.PHONY: finetune-script-simple finetune-script-csv finetune-script-json finetune-script-txt
 
 # Default fine-tuning settings
 FINETUNE_OUTPUT_DIR ?= ./finetuned_models/
@@ -17,6 +19,88 @@ EN_SWA_OUTPUT := ./finetuned_models/eng_swa_finetuned
 EN_KIK_OUTPUT := ./finetuned_models/eng_kik_finetuned
 EN_SOM_OUTPUT := ./finetuned_models/eng_som_finetuned
 EN_AMA_OUTPUT := ./finetuned_models/eng_ama_finetuned
+
+# ============================================
+# CLI Tool Commands
+# ============================================
+
+finetune-cli:
+	@echo "Running NLLB fine-tuning CLI..."
+	uv run python -m app.finetune.cli $(ARGS)
+
+finetune-cli-csv:
+	@echo "Running CSV fine-tuning via CLI..."
+	@test -n "$(CSV_PATH)" || (echo "Error: CSV_PATH not set. Usage: make finetune-cli-csv CSV_PATH=data.csv SOURCE_COL=en TARGET_COL=sw SOURCE_LANG=english TARGET_LANG=swahili" && exit 1)
+	@test -n "$(SOURCE_COL)" || (echo "Error: SOURCE_COL not set" && exit 1)
+	@test -n "$(TARGET_COL)" || (echo "Error: TARGET_COL not set" && exit 1)
+	@test -n "$(SOURCE_LANG)" || (echo "Error: SOURCE_LANG not set" && exit 1)
+	@test -n "$(TARGET_LANG)" || (echo "Error: TARGET_LANG not set" && exit 1)
+	uv run python -m app.finetune.cli --mode csv \
+		--csv-path $(CSV_PATH) \
+		--source-col $(SOURCE_COL) \
+		--target-col $(TARGET_COL) \
+		--source-lang $(SOURCE_LANG) \
+		--target-lang $(TARGET_LANG) \
+		--output-dir $(FINETUNE_OUTPUT_DIR) \
+		--epochs $(FINETUNE_EPOCHS) \
+		--batch-size $(FINETUNE_BATCH_SIZE)
+
+finetune-cli-json:
+	@echo "Running JSON fine-tuning via CLI..."
+	@test -n "$(JSON_PATH)" || (echo "Error: JSON_PATH not set. Usage: make finetune-cli-json JSON_PATH=data.json SOURCE_LANG=english TARGET_LANG=swahili" && exit 1)
+	@test -n "$(SOURCE_LANG)" || (echo "Error: SOURCE_LANG not set" && exit 1)
+	@test -n "$(TARGET_LANG)" || (echo "Error: TARGET_LANG not set" && exit 1)
+	uv run python -m app.finetune.cli --mode json \
+		--json-path $(JSON_PATH) \
+		--source-key $(SOURCE_KEY) \
+		--target-key $(TARGET_KEY) \
+		--source-lang $(SOURCE_LANG) \
+		--target-lang $(TARGET_LANG) \
+		--output-dir $(FINETUNE_OUTPUT_DIR) \
+		--epochs $(FINETUNE_EPOCHS) \
+		--batch-size $(FINETUNE_BATCH_SIZE)
+
+finetune-cli-txt:
+	@echo "Running TXT fine-tuning via CLI..."
+	@test -n "$(SOURCE_TXT)" || (echo "Error: SOURCE_TXT not set. Usage: make finetune-cli-txt SOURCE_TXT=source.txt TARGET_TXT=target.txt SOURCE_LANG=english TARGET_LANG=swahili" && exit 1)
+	@test -n "$(TARGET_TXT)" || (echo "Error: TARGET_TXT not set" && exit 1)
+	@test -n "$(SOURCE_LANG)" || (echo "Error: SOURCE_LANG not set" && exit 1)
+	@test -n "$(TARGET_LANG)" || (echo "Error: TARGET_LANG not set" && exit 1)
+	uv run python -m app.finetune.cli --mode txt \
+		--source-txt $(SOURCE_TXT) \
+		--target-txt $(TARGET_TXT) \
+		--source-lang $(SOURCE_LANG) \
+		--target-lang $(TARGET_LANG) \
+		--output-dir $(FINETUNE_OUTPUT_DIR) \
+		--epochs $(FINETUNE_EPOCHS) \
+		--batch-size $(FINETUNE_BATCH_SIZE)
+
+finetune-cli-example:
+	@echo "Running example fine-tuning via CLI..."
+	uv run python -m app.finetune.cli --mode example
+
+finetune-cli-help:
+	@echo "Showing CLI help..."
+	uv run python -m app.finetune.cli --help
+
+# ============================================
+# Direct Script Commands
+# ============================================
+
+finetune-script-simple:
+	uv run python app/finetune/simple_finetune.py
+
+finetune-script-csv:
+	@test -n "$(CSV_PATH)" || (echo "Error: CSV_PATH not set" && exit 1)
+	uv run python app/finetune/csv_finetune.py
+
+finetune-script-json:
+	@test -n "$(JSON_PATH)" || (echo "Error: JSON_PATH not set" && exit 1)
+	uv run python app/finetune/json_finetune.py
+
+finetune-script-txt:
+	@test -n "$(SOURCE_TXT)" || (echo "Error: SOURCE_TXT not set" && exit 1)
+	uv run python app/finetune/txt_finetune.py
 
 # ============================================
 # Basic Fine-tuning Examples
@@ -103,8 +187,8 @@ finetune-english-somali:
 finetune-list-models:
 	@echo "Available fine-tuned models:"
 	@echo "========================"
-	@if [ -d "./models" ]; then \
-		find ./models -maxdepth 2 -type d -name "*finetuned*" -o -name "*nllb*" | while read dir; do \
+	@if [ -d "./finetuned_models" ]; then \
+		find ./finetuned_models -maxdepth 2 -type d -name "*finetuned*" | while read dir; do \
 			if [ -f "$$dir/config.json" ]; then \
 				echo "[OK] $$dir"; \
 				if [ -f "$$dir/training_args.bin" ]; then \
@@ -113,15 +197,15 @@ finetune-list-models:
 			fi; \
 		done; \
 	else \
-		echo "No models directory found. Run fine-tuning first."; \
+		echo "No finetuned_models directory found. Run fine-tuning first."; \
 	fi
 
 finetune-clean-models:
 	@echo "Cleaning fine-tuned models..."
-	@read -p "Are you sure you want to delete all models in ./models/? [y/N] " -n 1 -r; \
+	@read -p "Are you sure you want to delete all models in ./finetuned_models/? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		rm -rf ./models/*finetuned*; \
+		rm -rf ./finetuned_models/*; \
 		echo "Models cleaned"; \
 	else \
 		echo "Cancelled"; \
@@ -145,7 +229,7 @@ finetune-clean-specific:
 
 finetune-evaluate:
 	@echo "Evaluating fine-tuned model..."
-	@test -n "$(MODEL_PATH)" || (echo "Error: MODEL_PATH not set. Usage: make finetune-evaluate MODEL_PATH=./models/eng_swa_finetuned" && exit 1)
+	@test -n "$(MODEL_PATH)" || (echo "Error: MODEL_PATH not set. Usage: make finetune-evaluate MODEL_PATH=./finetuned_models/eng_swa_finetuned" && exit 1)
 	@test -n "$(TEST_FILE)" || (echo "Error: TEST_FILE not set. Provide test sentences file" && exit 1)
 	uv run python -c "from app.services.nllb_service import NLLBTTTService; translator = NLLBTTTService(fine_tuned_path='$(MODEL_PATH)'); f = open('$(TEST_FILE)', 'r'); [print(f'Source: {line.strip()}\nTranslation: {translator.translate(line.strip(), \"$(SOURCE_LANG)\", \"$(TARGET_LANG)\")}\n---') for line in f if line.strip()]"
 
@@ -178,11 +262,25 @@ finetune-help:
 	@echo "NLLB Fine-tuning Commands"
 	@echo "========================================="
 	@echo ""
-	@echo "BASIC COMMANDS:"
+	@echo "CLI TOOL COMMANDS (recommended):"
+	@echo "  make finetune-cli ARGS='--help'    - Run CLI with custom arguments"
+	@echo "  make finetune-cli-example          - Run example via CLI"
+	@echo "  make finetune-cli-csv              - Run CSV fine-tuning via CLI"
+	@echo "  make finetune-cli-json             - Run JSON fine-tuning via CLI"
+	@echo "  make finetune-cli-txt              - Run TXT fine-tuning via CLI"
+	@echo "  make finetune-cli-help             - Show CLI help"
+	@echo ""
+	@echo "FUNCTION COMMANDS:"
 	@echo "  make finetune-example              - Run example fine-tuning"
 	@echo "  make finetune-csv                  - Fine-tune from CSV file"
 	@echo "  make finetune-json                 - Fine-tune from JSON file"
 	@echo "  make finetune-txt                  - Fine-tune from text files"
+	@echo ""
+	@echo "SCRIPT COMMANDS (direct):"
+	@echo "  make finetune-script-simple        - Run simple_finetune.py directly"
+	@echo "  make finetune-script-csv           - Run csv_finetune.py directly"
+	@echo "  make finetune-script-json          - Run json_finetune.py directly"
+	@echo "  make finetune-script-txt           - Run txt_finetune.py directly"
 	@echo ""
 	@echo "LANGUAGE-SPECIFIC:"
 	@echo "  make finetune-english-swahili      - Fine-tune English->Swahili"
@@ -200,15 +298,27 @@ finetune-help:
 	@echo "  make finetune-check-deps           - Check required packages"
 	@echo ""
 	@echo "EXAMPLES:"
+	@echo ""
+	@echo "CLI TOOL EXAMPLES:"
+	@echo "  make finetune-cli ARGS='--mode csv --csv-path data.csv --source-col en --target-col sw --source-lang english --target-lang swahili'"
+	@echo "  make finetune-cli-csv CSV_PATH=data.csv SOURCE_COL=en TARGET_COL=sw SOURCE_LANG=english TARGET_LANG=swahili"
+	@echo "  make finetune-cli-json JSON_PATH=data.json SOURCE_LANG=english TARGET_LANG=swahili"
+	@echo "  make finetune-cli-txt SOURCE_TXT=en.txt TARGET_TXT=sw.txt SOURCE_LANG=english TARGET_LANG=swahili"
+	@echo "  make finetune-cli-help"
+	@echo ""
+	@echo "FUNCTION EXAMPLES:"
 	@echo "  make finetune-csv CSV_PATH=data.csv SOURCE_COL=en TARGET_COL=sw SOURCE_LANG=english TARGET_LANG=swahili"
 	@echo "  make finetune-json JSON_PATH=data.json SOURCE_LANG=english TARGET_LANG=swahili"
 	@echo "  make finetune-txt SOURCE_TXT=en.txt TARGET_TXT=sw.txt SOURCE_LANG=english TARGET_LANG=swahili"
 	@echo "  make finetune-english-swahili DATA_PATH=data.csv FORMAT=csv SOURCE_COL=en TARGET_COL=sw"
-	@echo "  make finetune-evaluate MODEL_PATH=./models/eng_swa_finetuned TEST_FILE=test.txt SOURCE_LANG=english TARGET_LANG=swahili"
+	@echo "  make finetune-evaluate MODEL_PATH=./finetuned_models/eng_swa_finetuned TEST_FILE=test.txt SOURCE_LANG=english TARGET_LANG=swahili"
 	@echo ""
 	@echo "CONFIGURABLE VARIABLES:"
 	@echo "  FINETUNE_EPOCHS=5                 - Number of training epochs"
 	@echo "  FINETUNE_BATCH_SIZE=4             - Batch size"
-	@echo "  FINETUNE_OUTPUT_DIR=./models/dir  - Output directory"
+	@echo "  FINETUNE_OUTPUT_DIR=./finetuned_models/  - Output directory"
+	@echo "  FINETUNE_VALIDATION_SPLIT=0.1     - Validation split ratio"
 	@echo "  AUGMENT=true                      - Enable data augmentation (for txt mode)"
+	@echo "  SOURCE_KEY=source                 - JSON source key"
+	@echo "  TARGET_KEY=target                 - JSON target key"
 	@echo ""
