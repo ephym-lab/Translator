@@ -289,9 +289,10 @@ class NLLBTTTService(BaseTTTService):
             args=training_args,
             train_dataset=tokenized_dataset["train"],
             eval_dataset=tokenized_dataset["validation"],
-            tokenizer=self._tokenizer,
+            processing_class=self._tokenizer,
             data_collator=data_collator,
         )
+    
         
         # Start training
         logger.info(f"Starting fine-tuning for {source_lang} → {target_lang}")
