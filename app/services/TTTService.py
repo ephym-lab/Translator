@@ -109,13 +109,13 @@ class NLLBTTTService(BaseTTTService):
                     ).to(self._device)
 
                 logger.info("Finetuned NLLB model loaded successfully.")
-            except Exception as e:
-                logger.error(f"Error loading fine-tuned model: {str(e)}")
-                self.fine_tuned_path = None
-                raise e
-            
+
+        except Exception as e:
+                    logger.error(f"Error loading fine-tuned model: {str(e)}")
+                    self.fine_tuned_path = None
+                    raise e         
         else:
-            try
+            try:
                 # Load base model
                 self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
                 
