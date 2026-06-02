@@ -86,47 +86,59 @@ class NLLBTTTService(BaseTTTService):
             
         logger.info(f"Loading NLLB model: {self.model_name}")
         
-        # Check if we have a fine-tuned model
-        if self.fine_tuned_path and Path(self.fine_tuned_path).exists():
-            logger.info(f"Loading fine-tuned model from: {self.fine_tuned_path}")
-            self._tokenizer = AutoTokenizer.from_pretrained(self.fine_tuned_path)
+        try:
+            # Check if we have a fine-tuned model
+            if self.fine_tuned_path and Path(self.fine_tuned_path).exists():
+                logger.info(f"Loading fine-tuned model from: {self.fine_tuned_path}")
+                self._tokenizer = AutoTokenizer.from_pretrained(self.fine_tuned_path)
+                
+                if self.use_quantization:
+                    bnb_config = BitsAndBytesConfig(
+                        load_in_4bit=True,
+                        bnb_4bit_quant_type="nf4",
+                        bnb_4bit_compute_dtype=torch.bfloat16,
+                    )
+                    self._model = AutoModelForSeq2SeqLM.from_pretrained(
+                        self.fine_tuned_path,
+                        quantization_config=bnb_config,
+                        device_map="auto"
+                    )
+                else:
+                    self._model = AutoModelForSeq2SeqLM.from_pretrained(
+                        self.fine_tuned_path
+                    ).to(self._device)
+
+                logger.info("Finetuned NLLB model loaded successfully.")
+            except Exception as e:
+                logger.error(f"Error loading fine-tuned model: {str(e)}")
+                self.fine_tuned_path = None
+                raise e
             
-            if self.use_quantization:
-                bnb_config = BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_quant_type="nf4",
-                    bnb_4bit_compute_dtype=torch.bfloat16,
-                )
-                self._model = AutoModelForSeq2SeqLM.from_pretrained(
-                    self.fine_tuned_path,
-                    quantization_config=bnb_config,
-                    device_map="auto"
-                )
-            else:
-                self._model = AutoModelForSeq2SeqLM.from_pretrained(
-                    self.fine_tuned_path
-                ).to(self._device)
         else:
-            # Load base model
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            
-            if self.use_quantization and torch.cuda.is_available():
-                bnb_config = BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_quant_type="nf4",
-                    bnb_4bit_compute_dtype=torch.bfloat16,
-                )
-                self._model = AutoModelForSeq2SeqLM.from_pretrained(
-                    self.model_name,
-                    quantization_config=bnb_config,
-                    device_map="auto"
-                )
-            else:
-                self._model = AutoModelForSeq2SeqLM.from_pretrained(
-                    self.model_name
-                ).to(self._device)
+            try
+                # Load base model
+                self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                
+                if self.use_quantization and torch.cuda.is_available():
+                    bnb_config = BitsAndBytesConfig(
+                        load_in_4bit=True,
+                        bnb_4bit_quant_type="nf4",
+                        bnb_4bit_compute_dtype=torch.bfloat16,
+                    )
+                    self._model = AutoModelForSeq2SeqLM.from_pretrained(
+                        self.model_name,
+                        quantization_config=bnb_config,
+                        device_map="auto"
+                    )
+                else:
+                    self._model = AutoModelForSeq2SeqLM.from_pretrained(
+                        self.model_name
+                    ).to(self._device)
         
-        logger.info("NLLB model loaded successfully.")
+                logger.info("NLLB model loaded successfully.")
+            except Exception as e:
+                logger.error(f"Error loading NLLB model: {str(e)}")
+                raise e
 
     def get_language_code(self, lang: str) -> str:
         normalized = lang.lower().strip()
