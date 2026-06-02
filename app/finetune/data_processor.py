@@ -3,7 +3,7 @@
 import json
 import random
 from typing import List, Tuple
-
+import pandas as pd
 
 class DataPreprocessor:
     """Helper class to prepare data for fine-tuning from different formats."""
@@ -11,7 +11,6 @@ class DataPreprocessor:
     @staticmethod
     def from_csv(csv_path: str, source_col: str, target_col: str) -> Tuple[List[str], List[str]]:
         """Load parallel data from CSV file."""
-        import pandas as pd
         df = pd.read_csv(csv_path)
         return df[source_col].tolist(), df[target_col].tolist()
     
